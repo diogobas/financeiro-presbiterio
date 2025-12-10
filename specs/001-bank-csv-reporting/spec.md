@@ -17,7 +17,7 @@ As a Finance Admin, I upload a monthly bank CSV extract and map it to a known ac
 
 **Acceptance Scenarios**:
 
-1. Given a valid CSV with columns including Data, Documento, Valor, When the user uploads and selects/creates an Account, Then the system shows a preview with negative values correctly inferred from parentheses and a deduplication summary.
+1. Given a valid CSV containing required columns Data, Documento, Valor (pt-BR formats), When the user uploads and selects/creates an Account, Then the system shows a preview that trims extra spaces, ignores irrelevant columns (e.g., Descrição, Saldo), correctly infers negatives from parentheses, and displays a deduplication summary.
 2. Given the user confirms the import, When the same CSV (or same import batch content) is uploaded again, Then the system skips duplicates and reports zero new rows.
 
 ---
@@ -71,8 +71,10 @@ As a Finance Viewer, I select Month and Year to see totals of Receitas and Despe
 
 - CSV contains repeated lines: deduplication prevents re-insert.
 - Documento contains mixed case/accents: matching is case-insensitive and accent-folded.
-- Amounts with parentheses and thousand separators: normalized to signed decimals.
-- Timezone and month boundaries: transactions are grouped by transaction date in local timezone.
+- Amounts with parentheses and thousand separators/spaces: normalized to signed decimals per pt-BR, trimming extra spaces.
+- Dates in DD/MM/AAAA: parsed in pt-BR locale; month boundaries handled in local timezone.
+- Encoding deviations (Latin-1/ISO-8859-1): handled gracefully with UTF-8 as primary.
+- Example row parsable: `03/01/2025,TRANSF ENTRE CONTAS 239...,DIST PSGA,"R$2.000,00 ", "R$2.002,00 ",...` (irrelevant columns ignored).
 
 ## Requirements *(mandatory)*
 
@@ -89,9 +91,16 @@ As a Finance Viewer, I select Month and Year to see totals of Receitas and Despe
 - **FR-009**: System MUST provide drill-down to the contributing transactions for any category aggregate.
 - **FR-010**: System MUST meet report SLOs: p95 < 500ms for primary reports; p99 < 1s.
 - **FR-011**: System MUST expose explanations for classifications and overrides (Classification Transparency principle).
-- **FR-012**: System MUST validate incoming CSV schema at upload and report precise errors.
+- **FR-012**: System MUST validate incoming CSV schema at upload and report precise errors; required columns are `Data`, `Documento`, `Valor`. Irrelevant columns (e.g., `Descrição`, `Saldo`) MUST be ignored. Parser MUST tolerate extra spaces around values.
 - **FR-013**: System SHOULD cache stable report results with explicit invalidation on relevant mutations.
 - **FR-014**: System SHOULD provide what-if classification preview before saving a new rule.
+- **FR-015**: System MUST process pt-BR locale formats: numbers use comma as decimal separator and `()` indicate negative values; dates are `DD/MM/AAAA`.
+- **FR-016**: System MUST accept UTF-8 encoded CSVs; MUST gracefully handle common deviations (Latin-1/ISO-8859-1) with clear warnings without corrupting data.
+- **FR-017**: System MUST be bank-agnostic; users MUST manually map the source bank account during upload regardless of originating bank.
+- **FR-018**: System MUST enforce RBAC with three roles:
+  - Finance Admin: Full CRUD; can import CSVs, manage Accounts, Rules, and perform manual reclassifications (all audited).
+  - Finance Viewer: Read-only access to aggregated reports and drill-down details.
+  - Finance Auditor: Read-only extended access, including full audit trail and provenance (rules applied, overrides, actor/timestamps).
 
 ### Key Entities *(include if feature involves data)*
 
@@ -116,10 +125,8 @@ As a Finance Viewer, I select Month and Year to see totals of Receitas and Despe
 
 - Matching strategy uses case-insensitive and accent-folded substring search by default.
 - Target dataset is typical monthly volume for the organization; performance tuning uses realistic samples.
-- Roles: Finance Admin (manages imports, rules, reviews), Finance Viewer (views reports).
+- Roles: Finance Admin (manage imports, rules, reviews), Finance Viewer (view reports), Finance Auditor (view reports, transactions, and complete audit trail).
 
 ## Open Questions
 
-- [NEEDS CLARIFICATION: CSV schema beyond Data, Documento, Valor? Provide example headers and formats.]
-- [NEEDS CLARIFICATION: Supported banks/encodings and locale number formats?]
-- [NEEDS CLARIFICATION: Authentication/authorization scope beyond the two roles above?]
+None.
