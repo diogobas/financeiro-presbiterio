@@ -1,0 +1,52 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pg
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: financeiro
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  ingestion:
+    build:
+      context: ./backend/ingestion
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgres://app:app@postgres:5432/financeiro
+      PORT: 8080
+    depends_on:
+      - postgres
+    ports:
+      - "8080:8080"
+
+  reporting:
+    build:
+      context: ./backend/reporting
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/financeiro
+      SPRING_DATASOURCE_USERNAME: app
+      SPRING_DATASOURCE_PASSWORD: app
+      SERVER_PORT: 8081
+    depends_on:
+      - postgres
+    ports:
+      - "8081:8081"
+
+  frontend:
+    build:
+      context: ./frontend
+    environment:
+      VITE_API_INGESTION: http://localhost:8080
+      VITE_API_REPORTING: http://localhost:8081/graphql
+    ports:
+      - "5173:5173"
+
+volumes:
+  pgdata: {}

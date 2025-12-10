@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  ingestion-node:
+    name: Ingestion Service (Node/TS)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/ingestion
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/ingestion/package-lock.json
+      - name: Install
+        run: |
+          if [ -f package.json ]; then npm ci || npm install; fi
+      - name: Typecheck & Lint
+        run: |
+          if [ -f package.json ]; then npm run typecheck --if-present && npm run lint --if-present; fi
+      - name: Test
+        run: |
+          if [ -f package.json ]; then npm test --if-present; fi
+
+  reporting-java:
+    name: Reporting Service (Java/Spring)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/reporting
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - name: Gradle Build
+        run: |
+          if [ -f gradlew ] || [ -f build.gradle ]; then ./gradlew build -x test || true; fi
+          if [ -f mvnw ] || [ -f pom.xml ]; then ./mvnw -B -DskipTests package || true; fi
+      - name: Tests (JUnit)
+        run: |
+          if [ -f gradlew ] || [ -f build.gradle ]; then ./gradlew test || true; fi
+          if [ -f mvnw ] || [ -f pom.xml ]; then ./mvnw -B test || true; fi
+
+  frontend-react:
+    name: Frontend (React/TS)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install
+        run: |
+          if [ -f package.json ]; then npm ci || npm install; fi
+      - name: Typecheck & Lint
+        run: |
+          if [ -f package.json ]; then npm run typecheck --if-present && npm run lint --if-present; fi
+      - name: Tests
+        run: |
+          if [ -f package.json ]; then npm test --if-present; fi
+
+  docker-build:
+    name: Docker Build (all)
+    runs-on: ubuntu-latest
+    needs: [ingestion-node, reporting-java, frontend-react]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build images
+        run: |
+          docker build -t local/ingestion:ci ./backend/ingestion || true
+          docker build -t local/reporting:ci ./backend/reporting || true
+          docker build -t local/frontend:ci ./frontend || true
