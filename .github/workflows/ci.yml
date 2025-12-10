@@ -42,7 +42,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-          cache: gradle
+          # cache: gradle
       - name: Gradle Build
         run: |
           if [ -f gradlew ] || [ -f build.gradle ]; then ./gradlew build -x test || true; fi
