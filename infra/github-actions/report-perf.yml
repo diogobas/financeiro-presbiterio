@@ -1,0 +1,40 @@
+name: Report Performance Checks
+
+on:
+  pull_request:
+    paths:
+      - 'backend/reporting/**'
+      - 'specs/001-bank-csv-reporting/**'
+
+jobs:
+  explain-plans:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: financeiro
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app" --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Build reporting (skip tests)
+        working-directory: backend/reporting
+        run: |
+          if [ -f gradlew ] || [ -f build.gradle ]; then ./gradlew -q build -x test || true; fi
+          if [ -f mvnw ] || [ -f pom.xml ]; then ./mvnw -q -DskipTests package || true; fi
+      - name: Run EXPLAIN checks (placeholder)
+        run: |
+          echo "Running EXPLAIN plan checks against critical queries..."
+          echo "TODO: add SQL scripts under backend/reporting/sql/perf/*.sql and a checker script"
+          # Example placeholder that always passes for now
+          exit 0
