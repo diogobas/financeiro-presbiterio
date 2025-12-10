@@ -1,0 +1,38 @@
+scalar BigDecimal
+scalar Date
+
+"""Transaction record used in drill-down"""
+type Transaction {
+  id: ID!
+  date: Date!
+  documento: String!
+  amount: BigDecimal!
+  currency: String!
+  categoryId: ID
+  tipo: Tipo
+  ruleId: ID
+  ruleVersion: Int
+}
+
+enum Tipo { RECEITA DESPESA }
+
+"""Aggregated total by category and tipo for a period"""
+type CategorySummary {
+  categoryId: ID!
+  categoryName: String!
+  tipo: Tipo!
+  total: BigDecimal!
+  count: Int!
+}
+
+type PageInfo { hasNextPage: Boolean!, endCursor: String }
+
+type TransactionConnection {
+  nodes: [Transaction!]!
+  pageInfo: PageInfo!
+}
+
+type Query {
+  summaries(month: Int!, year: Int!, accountId: ID): [CategorySummary!]!
+  drillDown(categoryId: ID!, tipo: Tipo!, month: Int!, year: Int!, accountId: ID, first: Int = 50, after: String): TransactionConnection!
+}

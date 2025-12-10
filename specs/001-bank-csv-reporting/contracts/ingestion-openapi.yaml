@@ -1,0 +1,169 @@
+openapi: 3.0.3
+info:
+  title: Ingestion & Classification API
+  version: 0.1.0
+servers:
+  - url: https://api.example.com/ingestion
+paths:
+  /imports:
+    post:
+      summary: Upload monthly CSV and map to account
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                accountId:
+                  type: string
+                periodMonth:
+                  type: integer
+                periodYear:
+                  type: integer
+      responses:
+        '202':
+          description: Import accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportBatch'
+  /imports/{id}:
+    get:
+      summary: Get import status and summary
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Import status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportBatch'
+  /rules:
+    get:
+      summary: List rules
+      responses:
+        '200':
+          description: Rules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Rule'
+    post:
+      summary: Create rule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuleCreate'
+      responses:
+        '201':
+          description: Rule created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rule'
+  /transactions/unclassified:
+    get:
+      summary: List unclassified transactions
+      parameters:
+        - in: query
+          name: accountId
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Unclassified list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Transaction'
+  /transactions/{id}/override:
+    post:
+      summary: Apply manual classification override
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OverrideCreate'
+      responses:
+        '200':
+          description: Transaction updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+components:
+  schemas:
+    ImportBatch:
+      type: object
+      properties:
+        id: { type: string }
+        accountId: { type: string }
+        uploadedAt: { type: string, format: date-time }
+        fileChecksum: { type: string }
+        periodMonth: { type: integer }
+        periodYear: { type: integer }
+        rowCount: { type: integer }
+        status: { type: string, enum: [PENDING, PROCESSING, COMPLETED, FAILED] }
+    Rule:
+      type: object
+      properties:
+        id: { type: string }
+        version: { type: integer }
+        matcherType: { type: string, enum: [CONTAINS, REGEX] }
+        pattern: { type: string }
+        categoryId: { type: string }
+        tipo: { type: string, enum: [RECEITA, DESPESA] }
+        active: { type: boolean }
+    RuleCreate:
+      type: object
+      required: [matcherType, pattern, categoryId, tipo]
+      properties:
+        matcherType: { type: string, enum: [CONTAINS, REGEX] }
+        pattern: { type: string }
+        categoryId: { type: string }
+        tipo: { type: string, enum: [RECEITA, DESPESA] }
+    Transaction:
+      type: object
+      properties:
+        id: { type: string }
+        accountId: { type: string }
+        batchId: { type: string }
+        date: { type: string, format: date }
+        documento: { type: string }
+        amount: { type: number, format: double }
+        currency: { type: string }
+        categoryId: { type: string, nullable: true }
+        tipo: { type: string, enum: [RECEITA, DESPESA], nullable: true }
+        classificationSource: { type: string, enum: [RULE, OVERRIDE, NONE] }
+        ruleId: { type: string, nullable: true }
+        ruleVersion: { type: integer, nullable: true }
+        rationale: { type: string, nullable: true }
+    OverrideCreate:
+      type: object
+      required: [categoryId, tipo, reason]
+      properties:
+        categoryId: { type: string }
+        tipo: { type: string, enum: [RECEITA, DESPESA] }
+        reason: { type: string }
