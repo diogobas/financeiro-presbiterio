@@ -35,7 +35,7 @@ description: "Task list template for feature implementation"
 - [x] T004 Initialize React/TS project in frontend (package.json, tsconfig.json, vite or CRA)
 - [x] T005 [P] Add Dockerfiles for each service at backend/ingestion/Dockerfile, backend/reporting/Dockerfile, frontend/Dockerfile
 - [x] T006 [P] Add docker-compose.yaml under infra/ for local dev (PostgreSQL + services)
-- [ ] T007 Configure GitHub Actions workflows under infra/github-actions for CI (lint, typecheck, tests)
+- [x] T007 Configure GitHub Actions workflows under infra/github-actions for CI (lint, typecheck, tests)
 - [ ] T008 Add shared code style and linting (ESLint/Prettier for Node/Frontend; Checkstyle/Spotless for Java)
 
 ---
