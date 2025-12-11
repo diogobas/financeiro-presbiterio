@@ -35,10 +35,7 @@ import {
  */
 export class PostgresAccountRepository implements IAccountRepository {
   async findById(id: string): Promise<Account | null> {
-    const result = await getPool().query<Account>(
-      'SELECT * FROM account WHERE id = $1',
-      [id]
-    );
+    const result = await getPool().query<Account>('SELECT * FROM account WHERE id = $1', [id]);
     return result.rows[0] || null;
   }
 
@@ -115,18 +112,14 @@ export class PostgresAccountRepository implements IAccountRepository {
  */
 export class PostgresCategoryRepository implements ICategoryRepository {
   async findById(id: string): Promise<Category | null> {
-    const result = await getPool().query<Category>(
-      'SELECT * FROM category WHERE id = $1',
-      [id]
-    );
+    const result = await getPool().query<Category>('SELECT * FROM category WHERE id = $1', [id]);
     return result.rows[0] || null;
   }
 
   async findByName(name: string): Promise<Category | null> {
-    const result = await getPool().query<Category>(
-      'SELECT * FROM category WHERE name = $1',
-      [name]
-    );
+    const result = await getPool().query<Category>('SELECT * FROM category WHERE name = $1', [
+      name,
+    ]);
     return result.rows[0] || null;
   }
 
@@ -182,7 +175,9 @@ export class PostgresCategoryRepository implements ICategoryRepository {
   }
 
   async count(): Promise<number> {
-    const result = await getPool().query<{ count: number }>('SELECT COUNT(*) as count FROM category');
+    const result = await getPool().query<{ count: number }>(
+      'SELECT COUNT(*) as count FROM category'
+    );
     return parseInt(result.rows[0].count as any);
   }
 }
@@ -192,10 +187,9 @@ export class PostgresCategoryRepository implements ICategoryRepository {
  */
 export class PostgresImportBatchRepository implements IImportBatchRepository {
   async findById(id: string): Promise<ImportBatch | null> {
-    const result = await getPool().query<ImportBatch>(
-      'SELECT * FROM import_batch WHERE id = $1',
-      [id]
-    );
+    const result = await getPool().query<ImportBatch>('SELECT * FROM import_batch WHERE id = $1', [
+      id,
+    ]);
     return result.rows[0] || null;
   }
 
@@ -270,10 +264,9 @@ export class PostgresImportBatchRepository implements IImportBatchRepository {
  */
 export class PostgresTransactionRepository implements ITransactionRepository {
   async findById(id: string): Promise<Transaction | null> {
-    const result = await getPool().query<Transaction>(
-      'SELECT * FROM transaction WHERE id = $1',
-      [id]
-    );
+    const result = await getPool().query<Transaction>('SELECT * FROM transaction WHERE id = $1', [
+      id,
+    ]);
     return result.rows[0] || null;
   }
 
@@ -294,7 +287,11 @@ export class PostgresTransactionRepository implements ITransactionRepository {
     return result.rows;
   }
 
-  async findByDateRange(startDate: Date, endDate: Date, accountId?: string): Promise<Transaction[]> {
+  async findByDateRange(
+    startDate: Date,
+    endDate: Date,
+    accountId?: string
+  ): Promise<Transaction[]> {
     const query = accountId
       ? 'SELECT * FROM transaction WHERE account_id = $1 AND date >= $2 AND date <= $3 ORDER BY date'
       : 'SELECT * FROM transaction WHERE date >= $1 AND date <= $2 ORDER BY date';
@@ -408,17 +405,29 @@ export class PostgresTransactionRepository implements ITransactionRepository {
     unclassified: number;
     byType: Record<string, number>;
   }> {
-    const result = await getPool().query<any>(
-      `SELECT 
+    let query = `SELECT 
         COUNT(*) as total,
         COUNT(CASE WHEN category_id IS NOT NULL THEN 1 END) as classified,
         COUNT(CASE WHEN category_id IS NULL THEN 1 END) as unclassified
        FROM transaction
-       WHERE (:accountId IS NULL OR account_id = :accountId)
-       AND (:startDate IS NULL OR date >= :startDate)
-       AND (:endDate IS NULL OR date <= :endDate)`,
-      { accountId, startDate, endDate }
-    );
+       WHERE 1=1`;
+    const params: any[] = [];
+    let paramCount = 1;
+
+    if (accountId !== undefined) {
+      query += ` AND account_id = $${paramCount++}`;
+      params.push(accountId);
+    }
+    if (startDate !== undefined) {
+      query += ` AND date >= $${paramCount++}`;
+      params.push(startDate);
+    }
+    if (endDate !== undefined) {
+      query += ` AND date <= $${paramCount++}`;
+      params.push(endDate);
+    }
+
+    const result = await getPool().query<any>(query, params);
     const row = result.rows[0];
     return {
       total: parseInt(row.total),
@@ -434,10 +443,7 @@ export class PostgresTransactionRepository implements ITransactionRepository {
  */
 export class PostgresRuleRepository implements IRuleRepository {
   async findById(id: string): Promise<Rule | null> {
-    const result = await getPool().query<Rule>(
-      'SELECT * FROM rule WHERE id = $1',
-      [id]
-    );
+    const result = await getPool().query<Rule>('SELECT * FROM rule WHERE id = $1', [id]);
     return result.rows[0] || null;
   }
 
@@ -469,7 +475,14 @@ export class PostgresRuleRepository implements IRuleRepository {
       `INSERT INTO rule (matcher_type, pattern, category_id, tipo, created_by, active)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [input.matcherType, input.pattern, input.categoryId, input.tipo, input.createdBy, input.active ?? true]
+      [
+        input.matcherType,
+        input.pattern,
+        input.categoryId,
+        input.tipo,
+        input.createdBy,
+        input.active ?? true,
+      ]
     );
     return result.rows[0];
   }
@@ -564,14 +577,20 @@ export class PostgresClassificationOverrideRepository implements IClassification
     byActor: Record<string, number>;
     byCategory: Record<string, number>;
   }> {
-    const result = await getPool().query<any>(
-      `SELECT 
-        COUNT(*) as total
-       FROM classification_override
-       WHERE (:startDate IS NULL OR created_at >= :startDate)
-       AND (:endDate IS NULL OR created_at <= :endDate)`,
-      { startDate, endDate }
-    );
+    let query = `SELECT COUNT(*) as total FROM classification_override WHERE 1=1`;
+    const params: any[] = [];
+    let paramCount = 1;
+
+    if (startDate !== undefined) {
+      query += ` AND created_at >= $${paramCount++}`;
+      params.push(startDate);
+    }
+    if (endDate !== undefined) {
+      query += ` AND created_at <= $${paramCount++}`;
+      params.push(endDate);
+    }
+
+    const result = await getPool().query<any>(query, params);
     return {
       total: parseInt(result.rows[0].total),
       byActor: {},
@@ -584,7 +603,11 @@ export class PostgresClassificationOverrideRepository implements IClassification
  * ReportingRepository Implementation
  */
 export class PostgresReportingRepository implements IReportingRepository {
-  async getCategoryTotals(year?: number, month?: number, accountId?: string): Promise<CategoryTotalsView[]> {
+  async getCategoryTotals(
+    year?: number,
+    month?: number,
+    accountId?: string
+  ): Promise<CategoryTotalsView[]> {
     let query = 'SELECT * FROM mv_category_totals WHERE 1=1';
     const params: any[] = [];
     let paramCount = 1;
@@ -606,7 +629,10 @@ export class PostgresReportingRepository implements IReportingRepository {
     return result.rows;
   }
 
-  async getCategoryTotalsByAccount(accountId: string, year?: number): Promise<CategoryTotalsView[]> {
+  async getCategoryTotalsByAccount(
+    accountId: string,
+    year?: number
+  ): Promise<CategoryTotalsView[]> {
     return this.getCategoryTotals(year, undefined, accountId);
   }
 
@@ -620,15 +646,20 @@ export class PostgresReportingRepository implements IReportingRepository {
     averageAmount: number;
     byCategory: Array<{ category: string; total: number; count: number }>;
   }> {
-    const result = await getPool().query<any>(
-      `SELECT 
+    let query = `SELECT 
         COUNT(*) as total_transactions,
         COALESCE(SUM(amount), 0) as total_amount,
         COALESCE(AVG(amount), 0) as average_amount
        FROM transaction
-       WHERE :accountId IS NULL OR account_id = :accountId`,
-      { accountId }
-    );
+       WHERE 1=1`;
+    const params: any[] = [];
+
+    if (accountId !== undefined) {
+      query += ` AND account_id = $1`;
+      params.push(accountId);
+    }
+
+    const result = await getPool().query<any>(query, params);
     const row = result.rows[0];
     return {
       totalTransactions: parseInt(row.total_transactions),
