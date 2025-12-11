@@ -44,8 +44,8 @@ description: "Task list template for feature implementation"
 
 **Purpose**: Core infrastructure that MUST be complete before ANY user story can be implemented
 
-- [ ] T009 Setup PostgreSQL schema migrations (ingestion: backend/ingestion/src/db/migrations/, reporting reads same DB)
-- [ ] T010 [P] Implement DB connection factories and env config (backend/ingestion/src/config/db.ts, backend/reporting/src/main/resources/application.yml)
+- [x] T009 Setup PostgreSQL schema migrations (ingestion: backend/ingestion/src/db/migrations/, reporting reads same DB)
+- [x] T010 [P] Implement DB connection factories and env config (backend/ingestion/src/config/db.ts, backend/reporting/src/main/resources/application.yml)
 - [ ] T011 [P] Create base entities and repositories matching data-model.md (ingestion: src/domain/*, reporting: src/main/java/.../domain/*)
 - [ ] T012 Implement OAuth2/JWT middleware (ingestion: src/middleware/auth.ts, reporting: SecurityConfig.java)
 - [ ] T013 Add RBAC guards for Admin/Viewer/Auditor roles (ingestion: src/middleware/rbac.ts, reporting: method security)
