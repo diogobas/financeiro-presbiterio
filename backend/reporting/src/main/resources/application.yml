@@ -1,0 +1,61 @@
+# ============================================================================
+# Database Configuration for Spring Boot (Reporting Service)
+# ============================================================================
+
+# PostgreSQL Connection Properties
+spring.datasource.url=jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:financeiro}
+spring.datasource.username=${DB_USER:postgres}
+spring.datasource.password=${DB_PASSWORD:postgres}
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+# Connection Pool Settings (HikariCP)
+spring.datasource.hikari.maximum-pool-size=${DB_MAX_CONNECTIONS:20}
+spring.datasource.hikari.minimum-idle=5
+spring.datasource.hikari.idle-timeout=300000
+spring.datasource.hikari.max-lifetime=1200000
+spring.datasource.hikari.connection-timeout=10000
+spring.datasource.hikari.leak-detection-threshold=15000
+
+# JPA / Hibernate Configuration
+spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.hibernate.ddl-auto=validate
+spring.jpa.show-sql=false
+spring.jpa.properties.hibernate.format_sql=true
+spring.jpa.properties.hibernate.jdbc.batch_size=20
+spring.jpa.properties.hibernate.order_inserts=true
+spring.jpa.properties.hibernate.order_updates=true
+
+# Logging
+spring.jpa.properties.hibernate.generate_statistics=false
+logging.level.org.hibernate.SQL=debug
+logging.level.org.hibernate.type.descriptor.sql.BasicBinder=trace
+
+# Database connection properties
+spring.datasource.ssl=false
+
+# ============================================================================
+# JPA/ORM Mapping Configuration
+# ============================================================================
+
+# Scan for @Entity classes
+spring.jpa.properties.hibernate.hbm2ddl.auto=validate
+spring.jpa.properties.hibernate.hbm2ddl.charset=utf-8
+
+# Entity scanning
+spring.jpa.properties.hibernate.entity_copy_observer=allow
+
+# ============================================================================
+# GraphQL Configuration (for Reporting Service)
+# ============================================================================
+
+spring.graphql.schema-location=classpath:graphql/schema.graphqls
+spring.graphql.graphiql.enabled=true
+spring.graphql.graphiql.path=/graphiql
+
+# ============================================================================
+# Actuator Configuration
+# ============================================================================
+
+management.endpoints.web.exposure.include=health,info,prometheus
+management.endpoint.health.show-details=when-authorized
+management.health.db.enabled=true
