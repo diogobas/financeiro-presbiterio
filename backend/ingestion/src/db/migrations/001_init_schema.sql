@@ -199,7 +199,7 @@ GROUP BY
   t.category_id,
   c.tipo;
 
-CREATE UNIQUE INDEX idx_mv_category_totals_unique ON mv_category_totals(year, month, account_id, COALESCE(category_id, 'NULL'::UUID));
+CREATE UNIQUE INDEX idx_mv_category_totals_unique ON mv_category_totals(year, month, account_id, category_id);
 
 COMMENT ON MATERIALIZED VIEW mv_category_totals IS 'Aggregated transaction totals by category, month, and account (for fast reporting queries)';
 
