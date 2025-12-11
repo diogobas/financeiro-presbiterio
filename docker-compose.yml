@@ -12,41 +12,71 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d financeiro"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   ingestion:
     build:
       context: ./backend/ingestion
+      dockerfile: Dockerfile
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       DATABASE_URL: postgres://app:app@postgres:5432/financeiro
       PORT: 8080
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     ports:
       - "8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   reporting:
     build:
       context: ./backend/reporting
+      dockerfile: Dockerfile
     environment:
-      SPRING_PROFILES_ACTIVE: local
+      SPRING_PROFILES_ACTIVE: prod
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/financeiro
       SPRING_DATASOURCE_USERNAME: app
       SPRING_DATASOURCE_PASSWORD: app
       SERVER_PORT: 8081
+      # Enable debug logging
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB: DEBUG
+      # JVM options for better performance
+      JAVA_OPTS: -Xmx512m -Xms256m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:ParallelGCThreads=2 -XX:ConcGCThreads=2 -Djava.security.egd=file:/dev/./urandom
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     ports:
       - "8081:8081"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8081/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   frontend:
     build:
       context: ./frontend
+      dockerfile: Dockerfile
     environment:
-      VITE_API_INGESTION: http://localhost:8080
-      VITE_API_REPORTING: http://localhost:8081/graphql
+      NODE_ENV: production
     ports:
-      - "5173:5173"
+      - "80:80"
+    depends_on:
+      - reporting
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
   pgdata: {}
