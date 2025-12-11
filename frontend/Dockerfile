@@ -1,12 +1,34 @@
-# Frontend (React + TypeScript)
-FROM node:20-alpine AS base
+# Stage 1: Build the application
+FROM node:20-alpine AS builder
+
 WORKDIR /app
 
-COPY package*.json ./ 2>/dev/null || true
-RUN if [ -f package.json ]; then npm ci || npm install; fi
+# Install Python and build tools for node-gyp
+RUN apk add --no-cache python3 make g++
 
-COPY . ./
+# Copy package files
+COPY package*.json ./
 
-# Dev server for local usage; production build can be added later
-EXPOSE 5173
-CMD ["sh","-c","npm run dev -- --host 0.0.0.0 || npm start || sleep 3600"]
+# Install dependencies
+RUN npm install
+
+# Copy source code
+COPY . .
+
+# Build the application
+RUN npm run build
+
+# Stage 2: Serve the application with Nginx
+FROM nginx:alpine
+
+# Copy Nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copy built files from builder
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Expose port 80
+EXPOSE 80
+
+# Start Nginx
+CMD ["nginx", "-g", "daemon off;"]

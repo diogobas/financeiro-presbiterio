@@ -1,14 +1,36 @@
-# Ingestion Service (Node.js + TypeScript)
-FROM node:20-alpine AS base
+# Build stage
+FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Install dependencies (expects package.json/lock later)
-COPY package*.json . 2>/dev/null || true
-RUN if [ -f package.json ]; then npm ci || npm install; fi
+# Install build dependencies
+COPY package*.json ./
+RUN npm ci
 
-# Copy source (if present) and build
+# Copy source and build
 COPY . .
-RUN if [ -f tsconfig.json ]; then npm run build || true; fi
+RUN npm run build
+
+# Production stage
+FROM node:20-alpine
+WORKDIR /app
+
+# Install production dependencies only
+COPY package*.json ./
+RUN npm ci --only=production
+
+# Copy built files from builder
+COPY --from=builder /app/dist ./dist
+
+# Copy non-JavaScript files that might be needed at runtime
+COPY --from=builder /app/.env* ./
+
+# Run as non-root user
+RUN addgroup -S app && adduser -S app -G app
+USER app
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
 
 EXPOSE 8080
-CMD ["sh", "-c", "npm run start || node dist/index.js || node src/index.js"]
+CMD ["node", "dist/index.js"]

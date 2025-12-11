@@ -1,0 +1,44 @@
+# Gradle
+.gradle
+build/
+!build/libs/*.jar
+
+# Maven
+target/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# System Files
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Local configuration
+*.properties
+*.yml
+*.yaml
+!application*.{properties,yml,yaml}
+
+# Test files
+src/test/
+*.test
+
+# Git
+.git/
+.gitignore
+
+# Maven wrapper
+.mvn/
+mvnw
+mvnw.cmd
+
+# Build files
+pom.xml.*
+!pom.xml

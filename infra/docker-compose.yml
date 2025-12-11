@@ -20,7 +20,7 @@ services:
 
   ingestion:
     build:
-      context: ./backend/ingestion
+      context: ../backend/ingestion
       dockerfile: Dockerfile
     environment:
       NODE_ENV: production
@@ -39,7 +39,7 @@ services:
 
   reporting:
     build:
-      context: ./backend/reporting
+      context: ../backend/reporting
       dockerfile: Dockerfile
     environment:
       SPRING_PROFILES_ACTIVE: prod
@@ -47,9 +47,7 @@ services:
       SPRING_DATASOURCE_USERNAME: app
       SPRING_DATASOURCE_PASSWORD: app
       SERVER_PORT: 8081
-      # Enable debug logging
       LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB: DEBUG
-      # JVM options for better performance
       JAVA_OPTS: -Xmx512m -Xms256m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:ParallelGCThreads=2 -XX:ConcGCThreads=2 -Djava.security.egd=file:/dev/./urandom
     depends_on:
       postgres:
@@ -64,7 +62,7 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: ../frontend
       dockerfile: Dockerfile
     environment:
       NODE_ENV: production

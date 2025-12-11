@@ -1,17 +1,28 @@
-# Reporting Service (Java 21 + Spring Boot)
-FROM eclipse-temurin:21-jdk AS build
-WORKDIR /workspace
+# Build stage
+FROM maven:3.9.5-eclipse-temurin-21 AS builder
+WORKDIR /workspace/app
 
-# Copy sources (wrapper/gradle dir brought along if present)
-COPY . /workspace/
+# Copy Maven files
+COPY pom.xml .
+COPY src src
 
-# Attempt build (Maven/Gradle) if configuration exists
-RUN if [ -f mvnw ] || [ -f pom.xml ]; then ./mvnw -q -DskipTests package || true; fi && \
-    if [ -f gradlew ] || [ -f build.gradle ]; then ./gradlew -q clean build -x test || true; fi
+# Build the application
+RUN mvn clean package -DskipTests
 
-FROM eclipse-temurin:21-jre AS run
+# Production stage
+FROM eclipse-temurin:21-jre-jammy
 WORKDIR /app
-COPY --from=build /workspace/target/*.jar /app/ 2>/dev/null || true
-COPY --from=build /workspace/build/libs/*.jar /app/ 2>/dev/null || true
+
+# Create non-root user
+RUN groupadd -r app && useradd -r -g app app
+USER app
+
+# Copy the built JAR file
+COPY --from=builder /workspace/app/target/*.jar app.jar
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:8081/actuator/health || exit 1
+
 EXPOSE 8081
-ENTRYPOINT ["sh","-c","JAR=$(ls -1 /app/*.jar 2>/dev/null | head -n1); if [ -n \"$JAR\" ]; then java -jar \"$JAR\"; else echo 'No jar found, sleeping'; sleep 3600; fi"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
