@@ -49,7 +49,7 @@ description: "Task list template for feature implementation"
 - [x] T011 [P] Create base entities and repositories matching data-model.md (ingestion: src/domain/*, reporting: src/main/java/.../domain/*)
 - [x] T012 Implement OAuth2/JWT middleware (ingestion: src/middleware/auth.ts, reporting: SecurityConfig.java)
 - [x] T013 Add RBAC guards for Admin/Viewer/Auditor roles (ingestion: src/middleware/rbac.ts, reporting: method security)
-- [ ] T014 Setup test frameworks (Jest/Vitest in ingestion; JUnit + Testcontainers in reporting; RTL/Playwright in frontend)
+- [x] T014 Setup test frameworks (Jest/Vitest in ingestion; JUnit + Testcontainers in reporting; RTL/Playwright in frontend)
 - [ ] T015 Add CI jobs for EXPLAIN-plan capture on key report queries (infra/github-actions/report-perf.yml)
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
