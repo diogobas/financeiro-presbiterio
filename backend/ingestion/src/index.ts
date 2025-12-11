@@ -6,7 +6,7 @@ dotenv.config();
 
 // Create Fastify instance
 const server = Fastify({
-  logger: true
+  logger: true,
 });
 
 // Health check endpoint

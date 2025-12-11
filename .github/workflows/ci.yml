@@ -57,6 +57,18 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
       
+      - name: Run Checkstyle
+        run: |
+          if [ -f pom.xml ]; then
+            ./mvnw checkstyle:check
+          fi
+      
+      - name: Check code formatting
+        run: |
+          if [ -f pom.xml ]; then
+            ./mvnw spotless:check
+          fi
+      
       - name: Build with Maven
         run: |
           if [ -f pom.xml ]; then
@@ -94,15 +106,12 @@ jobs:
       
       - name: Lint
         run: npm run lint --if-present
-
+      
+      - name: Check formatting
+        run: npm run format:check --if-present
+      
       - name: Test
         run: npm test --if-present --watchAll=false
-
+      
       - name: Build
         run: npm run build
-
-      - name: Docker Build
-        run: |
-          docker build -t local/ingestion:ci ./backend/ingestion || true
-          docker build -t local/reporting:ci ./backend/reporting || true
-          docker build -t local/frontend:ci ./frontend || true

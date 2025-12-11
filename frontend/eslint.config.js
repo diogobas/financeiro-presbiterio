@@ -8,12 +8,7 @@ import tsPlugin from '@typescript-eslint/eslint-plugin';
 export default [
   // Base ignores
   {
-    ignores: [
-      'dist/**',
-      'node_modules/**',
-      'vite.config.*',
-      '**/*.config.*'
-    ]
+    ignores: ['dist/**', 'node_modules/**', 'vite.config.*', '**/*.config.*'],
   },
   // TypeScript files
   {
