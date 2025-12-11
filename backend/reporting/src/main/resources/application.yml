@@ -47,6 +47,15 @@ spring.jpa.properties.hibernate.hbm2ddl.charset=utf-8
 spring.jpa.properties.hibernate.entity_copy_observer=allow
 
 # ============================================================================
+# JWT Authentication Configuration (T012)
+# ============================================================================
+
+jwt.secret=${JWT_SECRET}
+jwt.refresh-secret=${JWT_REFRESH_SECRET}
+jwt.access-token-expiry=${JWT_ACCESS_TOKEN_EXPIRY:900000}
+jwt.refresh-token-expiry=${JWT_REFRESH_TOKEN_EXPIRY:604800000}
+
+# ============================================================================
 # GraphQL Configuration (for Reporting Service)
 # ============================================================================
 
