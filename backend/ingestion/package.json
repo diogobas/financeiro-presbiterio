@@ -10,6 +10,7 @@
     "@types/jest": "^30.0.0",
     "@types/node": "^25.0.0",
     "@types/pg": "^8.16.0",
+    "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^8.49.0",
     "@typescript-eslint/eslint-plugin-tslint": "^7.0.2",
     "@typescript-eslint/parser": "^8.49.0",
