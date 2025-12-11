@@ -8,7 +8,7 @@ import { JWTPayload, RefreshTokenPayload } from './auth.types';
 /**
  * Get JWT signing key from environment
  */
-function getSigningKey(): string {
+export function getSigningKey(): string {
   const key = process.env.JWT_SECRET;
   if (!key) {
     throw new Error('JWT_SECRET environment variable is required');
@@ -19,7 +19,7 @@ function getSigningKey(): string {
 /**
  * Get refresh token signing key from environment
  */
-function getRefreshSigningKey(): string {
+export function getRefreshSigningKey(): string {
   const key = process.env.JWT_REFRESH_SECRET;
   if (!key) {
     throw new Error('JWT_REFRESH_SECRET environment variable is required');
@@ -30,14 +30,14 @@ function getRefreshSigningKey(): string {
 /**
  * Get access token expiry from environment (default: 15 minutes)
  */
-function getAccessTokenExpiry(): string {
+export function getAccessTokenExpiry(): string {
   return process.env.JWT_ACCESS_TOKEN_EXPIRY || '15m';
 }
 
 /**
  * Get refresh token expiry from environment (default: 7 days)
  */
-function getRefreshTokenExpiry(): string {
+export function getRefreshTokenExpiry(): string {
   return process.env.JWT_REFRESH_TOKEN_EXPIRY || '7d';
 }
 
@@ -121,9 +121,50 @@ export function extractTokenFromHeader(authHeader?: string): string | null {
   }
 
   const parts = authHeader.split(' ');
-  if (parts.length !== 2 || parts[0] !== 'Bearer') {
+  if (parts.length !== 2 || parts[0].toLowerCase() !== 'bearer') {
     return null;
   }
 
   return parts[1];
+}
+
+/**
+ * JWTService class wrapper for dependency injection in tests
+ */
+export class JWTService {
+  createAccessToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): string {
+    return createAccessToken(payload);
+  }
+
+  createRefreshToken(userId: string): string {
+    return createRefreshToken(userId);
+  }
+
+  verifyAccessToken(token: string): JWTPayload {
+    return verifyAccessToken(token);
+  }
+
+  verifyRefreshToken(token: string): RefreshTokenPayload {
+    return verifyRefreshToken(token);
+  }
+
+  extractTokenFromHeader(authHeader?: string): string | null {
+    return extractTokenFromHeader(authHeader);
+  }
+
+  getSigningKey(): string {
+    return getSigningKey();
+  }
+
+  getRefreshSigningKey(): string {
+    return getRefreshSigningKey();
+  }
+
+  getAccessTokenExpiry(): string {
+    return getAccessTokenExpiry();
+  }
+
+  getRefreshTokenExpiry(): string {
+    return getRefreshTokenExpiry();
+  }
 }

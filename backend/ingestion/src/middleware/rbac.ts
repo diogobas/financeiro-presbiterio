@@ -26,14 +26,14 @@ const ROLE_HIERARCHY: Record<UserRole, UserRole[]> = {
 /**
  * Check if user has required role(s)
  */
-function hasRole(userRoles: string[], requiredRoles: UserRole[]): boolean {
+export function hasRole(userRoles: string[], requiredRoles: UserRole[]): boolean {
   return userRoles.some((role) => requiredRoles.includes(role as UserRole));
 }
 
 /**
  * Check if user has required role or higher
  */
-function hasRoleOrHigher(userRoles: string[], minimumRole: UserRole): boolean {
+export function hasRoleOrHigher(userRoles: string[], minimumRole: UserRole): boolean {
   for (const userRole of userRoles) {
     const hierarchy = ROLE_HIERARCHY[userRole as UserRole];
     if (hierarchy && hierarchy.includes(minimumRole)) {
