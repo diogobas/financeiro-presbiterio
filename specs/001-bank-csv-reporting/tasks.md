@@ -80,7 +80,11 @@ description: "Task list template for feature implementation"
   - ✅ parseAmount: pt-BR format (1.234,56) with parentheses→negative
   - ✅ parseCSVRow: full row parsing with normalization
   - ✅ src/ingest/csvParser.ts (180 loc)
-- [ ] T020 [US1] Implement import service (checksum, batch, dedup) at backend/ingestion/src/ingest/importService.ts
+- [x] T020 [US1] Implement import service (checksum, batch, dedup) at backend/ingestion/src/ingest/importService.ts
+  - ✅ 34 tests passing: checksums, row hashing, batch creation, dedup, pagination
+  - ✅ src/ingest/importService.ts (460 loc)
+  - ✅ test/ingest/importService.spec.ts (572 loc)
+  - Features: Idempotent by file checksum, dedup by (date|doc|amount) hash, status tracking
 - [ ] T021 [US1] Implement POST /imports endpoint per OpenAPI at backend/ingestion/src/http/importsRoute.ts
 - [ ] T022 [US1] Implement GET /imports/{id} status endpoint at backend/ingestion/src/http/importStatusRoute.ts
 - [ ] T023 [US1] DB migrations: tables for Account, ImportBatch, Transaction at backend/ingestion/src/db/migrations/*.sql
