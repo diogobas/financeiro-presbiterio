@@ -1,0 +1,57 @@
+# ============================================================================
+# Production Configuration for Spring Boot (Reporting Service)
+# ============================================================================
+# This file should be activated with: spring.profiles.active=prod
+
+# PostgreSQL Connection Properties
+# REQUIRED: All credentials must be provided via environment variables
+# Example: docker run -e DB_HOST=prod-db -e DB_PASSWORD=*** myapp:prod
+spring.datasource.url=jdbc:postgresql://${DB_HOST}:${DB_PORT:5432}/${DB_NAME}
+spring.datasource.username=${DB_USER}
+spring.datasource.password=${DB_PASSWORD}
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+# Connection Pool Settings (HikariCP) - Production tuned
+spring.datasource.hikari.maximum-pool-size=${DB_MAX_CONNECTIONS:30}
+spring.datasource.hikari.minimum-idle=10
+spring.datasource.hikari.idle-timeout=600000
+spring.datasource.hikari.max-lifetime=1800000
+spring.datasource.hikari.connection-timeout=15000
+spring.datasource.hikari.leak-detection-threshold=30000
+spring.datasource.hikari.auto-commit=true
+
+# JPA / Hibernate Configuration - Production tuned
+spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.hibernate.ddl-auto=validate
+spring.jpa.show-sql=false
+spring.jpa.properties.hibernate.format_sql=false
+spring.jpa.properties.hibernate.jdbc.batch_size=50
+spring.jpa.properties.hibernate.order_inserts=true
+spring.jpa.properties.hibernate.order_updates=true
+spring.jpa.properties.hibernate.jdbc.fetch_size=50
+
+# Logging - Production (minimal)
+logging.level.root=INFO
+logging.level.org.springframework=WARN
+logging.level.org.hibernate=WARN
+
+# Database connection - Production with SSL
+spring.datasource.ssl=${DB_SSL:true}
+spring.datasource.sslmode=${DB_SSL_MODE:require}
+spring.datasource.sslrootcert=${DB_SSL_CERT_PATH:}
+
+# ============================================================================
+# GraphQL Configuration (for Reporting Service)
+# ============================================================================
+
+spring.graphql.schema-location=classpath:graphql/schema.graphqls
+spring.graphql.graphiql.enabled=false
+
+# ============================================================================
+# Actuator Configuration - Production
+# ============================================================================
+
+management.endpoints.web.exposure.include=health,prometheus
+management.endpoint.health.show-details=when-authorized
+management.endpoint.health.probes.enabled=true
+management.health.probes.enabled=true
