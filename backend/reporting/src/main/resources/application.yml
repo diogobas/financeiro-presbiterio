@@ -3,9 +3,11 @@
 # ============================================================================
 
 # PostgreSQL Connection Properties
-spring.datasource.url=jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:financeiro}
-spring.datasource.username=${DB_USER:postgres}
-spring.datasource.password=${DB_PASSWORD:postgres}
+# NOTE: All credentials must be provided via environment variables for security
+# Example: export DB_HOST=localhost DB_PORT=5432 DB_NAME=financeiro DB_USER=app DB_PASSWORD=***
+spring.datasource.url=jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+spring.datasource.username=${DB_USER}
+spring.datasource.password=${DB_PASSWORD}
 spring.datasource.driver-class-name=org.postgresql.Driver
 
 # Connection Pool Settings (HikariCP)
