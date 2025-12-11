@@ -1,6 +1,9 @@
 import Fastify from 'fastify';
+import multipart from '@fastify/multipart';
 import dotenv from 'dotenv';
 import { initializePool, closePool, runMigrations } from './config/db';
+import importsRoute from './http/importsRoute';
+import importStatusRoute from './http/importStatusRoute';
 
 // Load environment variables
 dotenv.config();
@@ -8,6 +11,13 @@ dotenv.config();
 // Create Fastify instance
 const server = Fastify({
   logger: true,
+});
+
+// Register multipart plugin
+server.register(multipart, {
+  limits: {
+    fileSize: 100 * 1024 * 1024, // 100MB
+  },
 });
 
 // Health check endpoint
@@ -33,6 +43,10 @@ server.get('/health/db', async () => {
     };
   }
 });
+
+// Register routes
+server.route(importsRoute);
+server.route(importStatusRoute);
 
 // Start the server
 const start = async () => {

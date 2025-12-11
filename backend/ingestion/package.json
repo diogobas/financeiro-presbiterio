@@ -17,6 +17,7 @@
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
+    "form-data": "^4.0.1",
     "jest": "^30.2.0",
     "pg": "^8.16.3",
     "prettier": "^3.7.4",
@@ -46,10 +47,12 @@
     "@fastify/cors": "^11.2.0",
     "@fastify/helmet": "^13.0.2",
     "@fastify/jwt": "^10.0.0",
+    "@fastify/multipart": "^10.1.1",
     "@types/jsonwebtoken": "^9.0.10",
     "dotenv": "^17.2.3",
     "fastify": "^5.6.2",
     "jsonwebtoken": "^9.0.3",
+    "uuid": "^10.0.0",
     "zod": "^4.1.13"
   }
 }
