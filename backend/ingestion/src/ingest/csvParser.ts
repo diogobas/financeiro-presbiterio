@@ -87,6 +87,7 @@ export function parseAmount(amountStr: string): number {
   trimmed = trimmed.replace(/^R\$\s*/, '').trim();
 
   // Check for null bytes or severely corrupted data
+  // eslint-disable-next-line no-control-regex
   if (/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(trimmed)) {
     throw new Error(`Amount contains invalid characters: "${amountStr}"`);
   }
@@ -132,6 +133,7 @@ export function parseAmount(amountStr: string): number {
  */
 function normalizeDocumento(documento: string): string {
   // Check for null bytes or severely corrupted data
+  // eslint-disable-next-line no-control-regex
   if (/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(documento)) {
     throw new Error(`Documento contains invalid control characters: "${documento}"`);
   }

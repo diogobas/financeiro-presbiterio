@@ -1,5 +1,5 @@
 import { createHash } from 'crypto';
-import { Pool, QueryResult } from 'pg';
+import { Pool } from 'pg';
 import { parseCSVRow, TransactionRow } from './csvParser';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -348,16 +348,10 @@ export class ImportService {
 
     try {
       // Insert rows (skip duplicates)
-      let insertedCount = 0;
-      let skippedCount = 0;
-
       for (const { row, hash } of parsedRows) {
         const isDuplicate = await this.findDuplicateRow(batch.id, hash);
         if (!isDuplicate) {
           await this.insertTransaction(accountId, batch.id, row, hash);
-          insertedCount++;
-        } else {
-          skippedCount++;
         }
       }
 

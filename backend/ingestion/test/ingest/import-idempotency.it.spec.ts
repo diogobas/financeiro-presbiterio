@@ -201,7 +201,7 @@ describe('Import Idempotency - Dedup Logic', () => {
 
     // Verify no extra spaces
     for (const row of parsedRows) {
-      expect(row.documento).not.toMatch(/  /); // No double spaces
+      expect(row.documento).not.toMatch(/ {2}/); // No double spaces
     }
   });
 

@@ -1,5 +1,4 @@
 import { ImportService, ImportStatus } from '../../src/ingest/importService';
-import { Pool } from 'pg';
 
 /**
  * Import Service Integration Tests
@@ -52,13 +51,11 @@ describe('ImportService Integration Tests', () => {
   let mockPool: any;
   let batchStore: Map<string, MockBatch>;
   let transactionStore: Map<string, MockTransaction>;
-  let queryResults: any;
 
   beforeEach(() => {
     // Initialize in-memory stores
     batchStore = new Map();
     transactionStore = new Map();
-    queryResults = null;
 
     // Create mock pool
     mockPool = {
