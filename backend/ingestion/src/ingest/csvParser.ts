@@ -133,9 +133,7 @@ export function parseAmount(amountStr: string): number {
 function normalizeDocumento(documento: string): string {
   // Check for null bytes or severely corrupted data
   if (/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(documento)) {
-    throw new Error(
-      `Documento contains invalid control characters: "${documento}"`
-    );
+    throw new Error(`Documento contains invalid control characters: "${documento}"`);
   }
 
   return documento
