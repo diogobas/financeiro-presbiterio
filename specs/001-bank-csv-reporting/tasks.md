@@ -12,7 +12,7 @@ description: "Task list template for feature implementation"
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
-## Current Status: Phase 3 - 80% Complete
+## Current Status: Phase 3 - 90% Complete
 
 **Phase A (T016-T020)**: ✅ Complete
 - CSV Parser: 48 tests ✅
@@ -28,9 +28,11 @@ description: "Task list template for feature implementation"
 - Repository Implementations: All 3 repos ✅
 - Build Status: 0 errors, 0 warnings ✅
 
-**Phase C (T024-T025)**: ⏳ Frontend (Next)
-- Upload Screen: React/TS
-- Preview Component: Import summary
+**Phase C (T024-T025)**: ✅ Complete - Frontend Components Ready
+- Upload Screen: React/TypeScript component ✅
+- Preview Component: Import summary component ✅
+- Both components ESLint clean ✅
+- Frontend builds without errors ✅
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -130,8 +132,25 @@ description: "Task list template for feature implementation"
   - ✅ PostgresImportBatchRepository: Batch creation, checksum-based dedup detection, pagination
   - ✅ PostgresTransactionRepository: Bulk insert, classification statistics, status filtering
   - ✅ All in src/infrastructure/repositories.ts with proper type mappings
-- [ ] T024 [P] [US1] Frontend upload screen with account mapping at frontend/src/pages/UploadPage.tsx
-- [ ] T025 [US1] Frontend preview component showing normalization/dedup summary at frontend/src/components/import/ImportPreview.tsx
+- [x] T024 [P] [US1] Frontend upload screen with account mapping at frontend/src/pages/UploadPage.tsx
+  - ✅ Account selector with mock account list
+  - ✅ Month/Year period selectors
+  - ✅ File upload with CSV validation
+  - ✅ File size validation (max 100MB)
+  - ✅ File preview (first 6 lines)
+  - ✅ Loading/error/success states
+  - ✅ Form validation before submission
+  - ✅ frontend/src/pages/UploadPage.tsx (240 loc)
+  - ✅ frontend/src/pages/UploadPage.module.css (220 loc)
+- [x] T025 [US1] Frontend preview component showing normalization/dedup summary at frontend/src/components/import/ImportPreview.tsx
+  - ✅ Import batch metadata display
+  - ✅ Classification statistics with progress bar
+  - ✅ Transaction summary with classified/unclassified breakdown
+  - ✅ Percentage classified indicator
+  - ✅ Refresh status functionality
+  - ✅ Responsive design for mobile/desktop
+  - ✅ frontend/src/components/import/ImportPreview.tsx (223 loc)
+  - ✅ frontend/src/components/import/ImportPreview.module.css (280 loc)
 
 **Checkpoint**: US1 should be fully functional and independently testable
 
