@@ -453,10 +453,10 @@ describe('ImportService Integration Tests', () => {
   describe('Process Import - Full Workflow', () => {
     it('should process CSV with multiple rows successfully', async () => {
       const csvContent =
-        'Data,Documento,Valor\n' +
-        '03/01/2025,001,100.50\n' +
-        '04/01/2025,002,200.00\n' +
-        '05/01/2025,003,"(50,00)"\n'; // Negative amount
+        'Data,Descrição,Documento,Valor\n' +
+        '03/01/2025,DESC1,001,100.50\n' +
+        '04/01/2025,DESC2,002,200.00\n' +
+        '05/01/2025,DESC3,003,"(50,00)"\n'; // Negative amount
 
       const batch = await importService.processImport(csvContent, 'acc-123', 1, 2025, 'user-456');
 
@@ -470,7 +470,9 @@ describe('ImportService Integration Tests', () => {
 
     it('should be idempotent - same CSV produces same batch', async () => {
       const csvContent =
-        'Data,Documento,Valor\n' + '03/01/2025,001,100.50\n' + '04/01/2025,002,200.00\n';
+        'Data,Descrição,Documento,Valor\n' +
+        '03/01/2025,DESC1,001,100.50\n' +
+        '04/01/2025,DESC2,002,200.00\n';
 
       const batch1 = await importService.processImport(csvContent, 'acc-123', 1, 2025);
       const batch2 = await importService.processImport(csvContent, 'acc-123', 1, 2025);
@@ -481,7 +483,9 @@ describe('ImportService Integration Tests', () => {
 
     it('should skip duplicate rows on re-import', async () => {
       const csvContent =
-        'Data,Documento,Valor\n' + '03/01/2025,001,100.50\n' + '04/01/2025,002,200.00\n';
+        'Data,Descrição,Documento,Valor\n' +
+        '03/01/2025,DESC1,001,100.50\n' +
+        '04/01/2025,DESC2,002,200.00\n';
 
       // First import
       const batch1 = await importService.processImport(csvContent, 'acc-123', 1, 2025);
@@ -489,10 +493,10 @@ describe('ImportService Integration Tests', () => {
 
       // Simulate partial re-import with same + new row
       const csvContent2 =
-        'Data,Documento,Valor\n' +
-        '03/01/2025,001,100.50\n' +
-        '04/01/2025,002,200.00\n' +
-        '05/01/2025,003,300.00\n';
+        'Data,Descrição,Documento,Valor\n' +
+        '03/01/2025,DESC1,001,100.50\n' +
+        '04/01/2025,DESC2,002,200.00\n' +
+        '05/01/2025,DESC3,003,300.00\n';
 
       const batch2 = await importService.processImport(csvContent2, 'acc-123', 1, 2025);
 
@@ -503,9 +507,9 @@ describe('ImportService Integration Tests', () => {
 
     it('should handle CSV with quoted values correctly', async () => {
       const csvContent =
-        'Data,Documento,Valor\n' +
-        '03/01/2025,"001-XYZ","100,50"\n' +
-        '04/01/2025,"002-ABC","(200,00)"\n';
+        'Data,Descrição,Documento,Valor\n' +
+        '03/01/2025,"DESC1","001-XYZ","100,50"\n' +
+        '04/01/2025,"DESC2","002-ABC","(200,00)"\n';
 
       const batch = await importService.processImport(csvContent, 'acc-123', 1, 2025);
 
@@ -520,19 +524,19 @@ describe('ImportService Integration Tests', () => {
     });
 
     it('should fail gracefully with invalid date format', async () => {
-      const csvContent = 'Data,Documento,Valor\n' + '32/01/2025,001,100.50\n'; // Invalid day
+      const csvContent = 'Data,Descrição,Documento,Valor\n' + '32/01/2025,DESC,001,100.50\n'; // Invalid day
 
       await expect(importService.processImport(csvContent, 'acc-123', 1, 2025)).rejects.toThrow();
     });
 
     it('should fail gracefully with invalid amount format', async () => {
-      const csvContent = 'Data,Documento,Valor\n' + '03/01/2025,001,ABC\n'; // Invalid amount
+      const csvContent = 'Data,Descrição,Documento,Valor\n' + '03/01/2025,DESC,001,ABC\n'; // Invalid amount
 
       await expect(importService.processImport(csvContent, 'acc-123', 1, 2025)).rejects.toThrow();
     });
 
     it('should preserve negative amounts from parentheses notation', async () => {
-      const csvContent = 'Data,Documento,Valor\n' + '03/01/2025,001,"(1.000,50)"\n'; // Negative with thousand separator
+      const csvContent = 'Data,Descrição,Documento,Valor\n' + '03/01/2025,DESC,001,"(1.000,50)"\n'; // Negative with thousand separator
 
       const batch = await importService.processImport(csvContent, 'acc-123', 1, 2025);
       const txns = await importService.getImportBatchTransactions(batch.id);
@@ -541,7 +545,7 @@ describe('ImportService Integration Tests', () => {
     });
 
     it('should handle multiple periods separately', async () => {
-      const csvContent = 'Data,Documento,Valor\n03/01/2025,001,100.50\n';
+      const csvContent = 'Data,Descrição,Documento,Valor\n03/01/2025,DESC,001,100.50\n';
 
       const batch1 = await importService.processImport(csvContent, 'acc-123', 1, 2025);
       const batch2 = await importService.processImport(csvContent, 'acc-123', 2, 2025);

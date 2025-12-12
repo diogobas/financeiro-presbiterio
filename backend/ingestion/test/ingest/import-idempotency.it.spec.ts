@@ -63,12 +63,12 @@ describe('Import Idempotency - Dedup Logic', () => {
   }
 
   // Sample CSV content (as string, as if uploaded)
-  const csvContent = `Data,Documento,Valor
-03/01/2025,TRANSF PADARIA,"100,50"
-05/01/2025,PGTO CENTRAL,"125,00"
-10/01/2025,SALÁRIO JANEIRO,"5000,00"
-15/01/2025,DEPO CHECK,"2000,00"
-20/01/2025,TAXA SAQUE,"(25,50)"`;
+  const csvContent = `Data,Descrição,Documento,Valor
+03/01/2025,TRANSF ENTRE CONTAS,TRANSF PADARIA,"100,50"
+05/01/2025,PAGAMENTO,PGTO CENTRAL,"125,00"
+10/01/2025,SALÁRIO,SALÁRIO JANEIRO,"5000,00"
+15/01/2025,DEPOSITO,DEPO CHECK,"2000,00"
+20/01/2025,TAXA,TAXA SAQUE,"(25,50)"`;
 
   const csvLines = csvContent.trim().split('\n');
   const dataRows = csvLines.slice(1); // Skip header
@@ -132,13 +132,13 @@ describe('Import Idempotency - Dedup Logic', () => {
     );
 
     // Modify CSV to add one new row
-    const newCsvContent = `Data,Documento,Valor
-03/01/2025,TRANSF PADARIA,"100,50"
-05/01/2025,PGTO CENTRAL,"125,00"
-10/01/2025,SALÁRIO JANEIRO,"5000,00"
-15/01/2025,DEPO CHECK,"2000,00"
-20/01/2025,TAXA SAQUE,"(25,50)"
-25/01/2025,BONUS EXTRA,"1500,00"`;
+    const newCsvContent = `Data,Descrição,Documento,Valor
+03/01/2025,TRANSF ENTRE CONTAS,TRANSF PADARIA,"100,50"
+05/01/2025,PAGAMENTO,PGTO CENTRAL,"125,00"
+10/01/2025,SALÁRIO,SALÁRIO JANEIRO,"5000,00"
+15/01/2025,DEPOSITO,DEPO CHECK,"2000,00"
+20/01/2025,TAXA,TAXA SAQUE,"(25,50)"
+25/01/2025,BONUS,BONUS EXTRA,"1500,00"`;
 
     const newCsvLines = newCsvContent.trim().split('\n');
     const newDataRows = newCsvLines.slice(1);
@@ -207,7 +207,7 @@ describe('Import Idempotency - Dedup Logic', () => {
 
   it('correctly identifies duplicate row with minor variation', () => {
     // Parse original row
-    const originalCols = ['03/01/2025', 'TRANSF PADARIA', '100,50'];
+    const originalCols = ['03/01/2025', 'TRANSF ENTRE CONTAS', 'TRANSF PADARIA', '100,50'];
     const originalRow = parseCSVRow(originalCols);
     const originalHash = calculateRowHash(
       originalRow.date,
@@ -216,7 +216,12 @@ describe('Import Idempotency - Dedup Logic', () => {
     );
 
     // Parse similar row with space variation
-    const spaceVariationCols = ['03/01/2025', '  TRANSF   PADARIA  ', ' 100,50 '];
+    const spaceVariationCols = [
+      '03/01/2025',
+      '  TRANSF ENTRE CONTAS  ',
+      '  TRANSF   PADARIA  ',
+      ' 100,50 ',
+    ];
     const spaceRow = parseCSVRow(spaceVariationCols);
     const spaceHash = calculateRowHash(spaceRow.date, spaceRow.documento, spaceRow.amount);
 
@@ -226,11 +231,11 @@ describe('Import Idempotency - Dedup Logic', () => {
 
   it('distinguishes rows with different amounts', () => {
     // Two rows with same date and documento but different amounts
-    const row1Cols = ['03/01/2025', 'TRANSF PADARIA', '100,50'];
+    const row1Cols = ['03/01/2025', 'TRANSF ENTRE CONTAS', 'TRANSF PADARIA', '100,50'];
     const row1 = parseCSVRow(row1Cols);
     const hash1 = calculateRowHash(row1.date, row1.documento, row1.amount);
 
-    const row2Cols = ['03/01/2025', 'TRANSF PADARIA', '100,55'];
+    const row2Cols = ['03/01/2025', 'TRANSF ENTRE CONTAS', 'TRANSF PADARIA', '100,55'];
     const row2 = parseCSVRow(row2Cols);
     const hash2 = calculateRowHash(row2.date, row2.documento, row2.amount);
 
@@ -240,11 +245,11 @@ describe('Import Idempotency - Dedup Logic', () => {
 
   it('distinguishes rows with different dates', () => {
     // Two rows with same documento/amount but different dates
-    const row1Cols = ['03/01/2025', 'TRANSF PADARIA', '100,50'];
+    const row1Cols = ['03/01/2025', 'TRANSF ENTRE CONTAS', 'TRANSF PADARIA', '100,50'];
     const row1 = parseCSVRow(row1Cols);
     const hash1 = calculateRowHash(row1.date, row1.documento, row1.amount);
 
-    const row2Cols = ['04/01/2025', 'TRANSF PADARIA', '100,50'];
+    const row2Cols = ['04/01/2025', 'TRANSF ENTRE CONTAS', 'TRANSF PADARIA', '100,50'];
     const row2 = parseCSVRow(row2Cols);
     const hash2 = calculateRowHash(row2.date, row2.documento, row2.amount);
 
