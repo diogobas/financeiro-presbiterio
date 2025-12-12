@@ -191,6 +191,7 @@ export async function runMigrations(): Promise<void> {
       const sql = await fs.readFile(filePath, 'utf-8');
 
       console.log(`Executing migration: ${file}`);
+      // Execute the entire file as-is; PostgreSQL can handle multiple statements
       await pool.query(sql);
       console.log(`✓ Migration complete: ${file}`);
     }
