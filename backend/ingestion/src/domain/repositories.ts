@@ -16,6 +16,7 @@ import {
   CreateImportBatchInput,
   CreateTransactionInput,
   CreateRuleInput,
+  UpdateRuleInput,
   CreateClassificationOverrideInput,
   AccountStatus,
   ClassificationSource,
@@ -257,14 +258,25 @@ export interface IRuleRepository {
   findById(id: string): Promise<Rule | null>;
 
   /**
-   * Find all active rules
+   * Find all rules with optional filtering and pagination
+   */
+  findAll(options?: {
+    category?: string;
+    tipo?: 'RECEITA' | 'DESPESA';
+    enabled?: boolean;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ rules: Rule[]; total: number }>;
+
+  /**
+   * Find all active (enabled) rules
    */
   findActive(): Promise<Rule[]>;
 
   /**
-   * Find rules for a specific category
+   * Find rules by category
    */
-  findByCategory(categoryId: string): Promise<Rule[]>;
+  findByCategory(category: string): Promise<Rule[]>;
 
   /**
    * Find rules by type (RECEITA or DESPESA)
@@ -272,14 +284,24 @@ export interface IRuleRepository {
   findByType(tipo: 'RECEITA' | 'DESPESA'): Promise<Rule[]>;
 
   /**
-   * Create a new rule
+   * Find rule by name (should be unique)
+   */
+  findByName(name: string): Promise<Rule | null>;
+
+  /**
+   * Create a new rule (initializes version to 1, enabled=true)
    */
   create(input: CreateRuleInput): Promise<Rule>;
 
   /**
-   * Update rule (increments version)
+   * Update rule (increments version on changes)
    */
-  update(id: string, updates: Partial<Omit<CreateRuleInput, 'createdBy'>>): Promise<Rule>;
+  update(id: string, updates: UpdateRuleInput): Promise<Rule>;
+
+  /**
+   * Enable/disable rule
+   */
+  setEnabled(id: string, enabled: boolean): Promise<Rule>;
 
   /**
    * Deactivate rule (soft delete)
@@ -290,6 +312,16 @@ export interface IRuleRepository {
    * Count active rules
    */
   countActive(): Promise<number>;
+
+  /**
+   * Count total rules
+   */
+  count(): Promise<number>;
+
+  /**
+   * Check if rule name already exists
+   */
+  existsByName(name: string): Promise<boolean>;
 }
 
 /**

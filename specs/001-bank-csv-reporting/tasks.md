@@ -12,7 +12,7 @@ description: "Task list template for feature implementation"
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
-## Current Status: Phase 3 - 90% Complete
+## Current Status: Phase 4 (US2) - In Progress
 
 **Phase A (T016-T020)**: ✅ Complete
 - CSV Parser: 48 tests ✅
@@ -33,6 +33,12 @@ description: "Task list template for feature implementation"
 - Preview Component: Import summary component ✅
 - Both components ESLint clean ✅
 - Frontend builds without errors ✅
+
+**Phase D (T026-T027)**: ✅ Complete - Test Suite Ready
+- Contract Tests for /rules: 31 tests ✅
+- Matcher Unit Tests: 66 tests ✅
+- Total: 97 tests passing
+- All tests follow TDD approach (tests before implementation)
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -164,13 +170,42 @@ description: "Task list template for feature implementation"
 
 ### Tests for User Story 2
 
-- [ ] T026 [P] [US2] Contract tests for /rules endpoints at backend/ingestion/test/rules.contract.spec.ts
-- [ ] T027 [P] [US2] Unit tests for matcher (case-insensitive, accent-folded) at backend/ingestion/test/matcher.spec.ts
+- [x] T026 [P] [US2] Contract tests for /rules endpoints at backend/ingestion/test/http/rules.contract.spec.ts
+  - ✅ 31 tests passing: GET /rules (list, filter, pagination), POST /rules (create, validate), error cases
+  - ✅ Covers response schemas, headers, and HTTP status codes
+  - ✅ test/http/rules.contract.spec.ts (570 loc)
+- [x] T027 [P] [US2] Unit tests for matcher (case-insensitive, accent-folded) at backend/ingestion/test/classify/matcher.spec.ts
+  - ✅ 66 tests passing: accent folding, case insensitivity, contains/regex patterns
+  - ✅ Real-world banco transaction patterns (PADARIA, SALÁRIO, BOLETO, etc.)
+  - ✅ Edge cases: Unicode, special characters, lookahead assertions
+  - ✅ Performance validation (10K iterations in <100ms)
+  - ✅ test/classify/matcher.spec.ts (612 loc)
 
 ### Implementation for User Story 2
 
-- [ ] T028 [US2] Implement Rule entity/versioning and repository at backend/ingestion/src/domain/rule.ts
-- [ ] T029 [US2] Implement matcher library (contains/regex, accent-folded) at backend/ingestion/src/classify/matcher.ts
+- [x] T028 [US2] Implement Rule entity/versioning and repository at backend/ingestion/src/domain/types.ts
+  - ✅ Rule domain type with complete fields (name, description, category, tipo, pattern, matchType, version, priority, enabled, timestamps, createdBy)
+  - ✅ CreateRuleInput and UpdateRuleInput types for input validation
+  - ✅ IRuleRepository interface with 13 methods covering CRUD, filtering, pagination, versioning
+  - ✅ PostgresRuleRepository implementation with proper field mapping
+  - ✅ Automatic version incrementing on updates
+  - ✅ 60+ integration tests for repository operations (postgres-rule.spec.ts)
+  - ✅ DB schema migration (003_update_rule_schema.sql): renamed matcher_type to match_type, added name/description/category/priority/enabled/updated_at
+  - ✅ Unique constraint on rule name, proper indexes for queries
+  - ✅ Build: 0 errors ✅
+- [x] T029 [US2] Implement matcher library (contains/regex, accent-folded) at backend/ingestion/src/classify/matcher.ts
+  - ✅ DocumentMatcher class: Single-rule pattern matching (CONTAINS/REGEX)
+  - ✅ Accent-folded normalization (NFD decomposition, diacritic removal)
+  - ✅ Case-insensitive matching with result reasoning
+  - ✅ BatchDocumentMatcher class: Multi-rule matching with priorities
+  - ✅ Priority-based rule evaluation (higher priority = evaluated first)
+  - ✅ findFirstMatch(), findAllMatches(), hasMatch() methods
+  - ✅ Utility functions: normalizeDocumento(), matchesContains(), matchesRegex()
+  - ✅ 46 integration tests (matcher-integration.spec.ts)
+  - ✅ Real-world banco patterns: PADARIA, SALÁRIO, ÁGUA, LUZ, PIX, BOLETO
+  - ✅ Error handling: invalid regex, empty patterns, type safety
+  - ✅ Test Results: 112 total passing (66 unit + 46 integration)
+  - ✅ Build: 0 errors
 - [ ] T030 [US2] Integrate classification into import pipeline at backend/ingestion/src/classify/classificationService.ts
 - [ ] T031 [US2] Implement GET/POST /rules per OpenAPI at backend/ingestion/src/http/rulesRoute.ts
 - [ ] T032 [P] [US2] Frontend Rules management page at frontend/src/pages/RulesPage.tsx

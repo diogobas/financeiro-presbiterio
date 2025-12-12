@@ -152,26 +152,48 @@ export interface CreateTransactionInput {
  */
 export interface Rule {
   id: string;
-  version: number;
-  matcherType: MatcherType;
+  name: string;
+  description?: string;
+  categoryId?: string;
+  category?: string;
+  tipo?: TransactionType;
   pattern: string;
-  categoryId: string;
-  tipo: TransactionType;
-  createdBy: string;
+  matchType: MatcherType;
+  version: number;
+  priority: number;
+  enabled: boolean;
   createdAt: Date;
-  active: boolean;
+  updatedAt: Date;
+  createdBy?: string;
 }
 
 /**
- * Rule creation input
+ * Rule creation input (without id, version, timestamps)
  */
 export interface CreateRuleInput {
-  matcherType: MatcherType;
+  name: string;
+  description?: string;
+  category?: string;
+  tipo?: TransactionType;
   pattern: string;
-  categoryId: string;
-  tipo: TransactionType;
-  createdBy: string;
-  active?: boolean;
+  matchType: MatcherType;
+  priority?: number;
+  enabled?: boolean;
+  createdBy?: string;
+}
+
+/**
+ * Rule update input (partial)
+ */
+export interface UpdateRuleInput {
+  name?: string;
+  description?: string;
+  category?: string;
+  tipo?: TransactionType;
+  pattern?: string;
+  matchType?: MatcherType;
+  priority?: number;
+  enabled?: boolean;
 }
 
 /**
