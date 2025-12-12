@@ -193,7 +193,19 @@ description: "Task list template for feature implementation"
   - ✅ DB schema migration (003_update_rule_schema.sql): renamed matcher_type to match_type, added name/description/category/priority/enabled/updated_at
   - ✅ Unique constraint on rule name, proper indexes for queries
   - ✅ Build: 0 errors ✅
-- [ ] T029 [US2] Implement matcher library (contains/regex, accent-folded) at backend/ingestion/src/classify/matcher.ts
+- [x] T029 [US2] Implement matcher library (contains/regex, accent-folded) at backend/ingestion/src/classify/matcher.ts
+  - ✅ DocumentMatcher class: Single-rule pattern matching (CONTAINS/REGEX)
+  - ✅ Accent-folded normalization (NFD decomposition, diacritic removal)
+  - ✅ Case-insensitive matching with result reasoning
+  - ✅ BatchDocumentMatcher class: Multi-rule matching with priorities
+  - ✅ Priority-based rule evaluation (higher priority = evaluated first)
+  - ✅ findFirstMatch(), findAllMatches(), hasMatch() methods
+  - ✅ Utility functions: normalizeDocumento(), matchesContains(), matchesRegex()
+  - ✅ 46 integration tests (matcher-integration.spec.ts)
+  - ✅ Real-world banco patterns: PADARIA, SALÁRIO, ÁGUA, LUZ, PIX, BOLETO
+  - ✅ Error handling: invalid regex, empty patterns, type safety
+  - ✅ Test Results: 112 total passing (66 unit + 46 integration)
+  - ✅ Build: 0 errors
 - [ ] T030 [US2] Integrate classification into import pipeline at backend/ingestion/src/classify/classificationService.ts
 - [ ] T031 [US2] Implement GET/POST /rules per OpenAPI at backend/ingestion/src/http/rulesRoute.ts
 - [ ] T032 [P] [US2] Frontend Rules management page at frontend/src/pages/RulesPage.tsx
