@@ -12,7 +12,7 @@ description: "Task list template for feature implementation"
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
-## Current Status: Phase 3 - 90% Complete
+## Current Status: Phase 4 (US2) - In Progress
 
 **Phase A (T016-T020)**: ✅ Complete
 - CSV Parser: 48 tests ✅
@@ -33,6 +33,12 @@ description: "Task list template for feature implementation"
 - Preview Component: Import summary component ✅
 - Both components ESLint clean ✅
 - Frontend builds without errors ✅
+
+**Phase D (T026-T027)**: ✅ Complete - Test Suite Ready
+- Contract Tests for /rules: 31 tests ✅
+- Matcher Unit Tests: 66 tests ✅
+- Total: 97 tests passing
+- All tests follow TDD approach (tests before implementation)
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -164,8 +170,16 @@ description: "Task list template for feature implementation"
 
 ### Tests for User Story 2
 
-- [ ] T026 [P] [US2] Contract tests for /rules endpoints at backend/ingestion/test/rules.contract.spec.ts
-- [ ] T027 [P] [US2] Unit tests for matcher (case-insensitive, accent-folded) at backend/ingestion/test/matcher.spec.ts
+- [x] T026 [P] [US2] Contract tests for /rules endpoints at backend/ingestion/test/http/rules.contract.spec.ts
+  - ✅ 31 tests passing: GET /rules (list, filter, pagination), POST /rules (create, validate), error cases
+  - ✅ Covers response schemas, headers, and HTTP status codes
+  - ✅ test/http/rules.contract.spec.ts (570 loc)
+- [x] T027 [P] [US2] Unit tests for matcher (case-insensitive, accent-folded) at backend/ingestion/test/classify/matcher.spec.ts
+  - ✅ 66 tests passing: accent folding, case insensitivity, contains/regex patterns
+  - ✅ Real-world banco transaction patterns (PADARIA, SALÁRIO, BOLETO, etc.)
+  - ✅ Edge cases: Unicode, special characters, lookahead assertions
+  - ✅ Performance validation (10K iterations in <100ms)
+  - ✅ test/classify/matcher.spec.ts (612 loc)
 
 ### Implementation for User Story 2
 
