@@ -41,6 +41,7 @@ export interface Account {
   id: string;
   name: string;
   bankName?: string;
+  accountNumber?: string;
   status: AccountStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -52,6 +53,7 @@ export interface Account {
 export interface CreateAccountInput {
   name: string;
   bankName?: string;
+  accountNumber?: string;
   status?: AccountStatus;
 }
 

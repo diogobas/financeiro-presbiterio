@@ -1,6 +1,10 @@
 import Fastify from 'fastify';
+import multipart from '@fastify/multipart';
+import cors from '@fastify/cors';
 import dotenv from 'dotenv';
 import { initializePool, closePool, runMigrations } from './config/db';
+import importsRoute from './http/importsRoute';
+import importStatusRoute, { getUploadedMonthsHandler } from './http/importStatusRoute';
 
 // Load environment variables
 dotenv.config();
@@ -8,6 +12,18 @@ dotenv.config();
 // Create Fastify instance
 const server = Fastify({
   logger: true,
+});
+
+// Register CORS plugin
+server.register(cors, {
+  origin: true, // Allow all origins in development; restrict in production
+});
+
+// Register multipart plugin
+server.register(multipart, {
+  limits: {
+    fileSize: 100 * 1024 * 1024, // 100MB
+  },
 });
 
 // Health check endpoint
@@ -33,6 +49,25 @@ server.get('/health/db', async () => {
     };
   }
 });
+
+// Register routes
+if (Array.isArray(importsRoute)) {
+  for (const route of importsRoute) {
+    server.route(route);
+  }
+} else {
+  server.route(importsRoute);
+}
+
+// Register /imports/months BEFORE /imports/:id  to avoid parameter matching
+server.route({
+  method: 'GET' as const,
+  url: '/imports/months',
+  handler: getUploadedMonthsHandler,
+});
+
+// Register the /:id route (must be after /months)
+server.route(importStatusRoute);
 
 // Start the server
 const start = async () => {

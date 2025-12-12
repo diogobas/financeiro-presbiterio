@@ -6,11 +6,30 @@
 -- ENUMS (PostgreSQL Domain Types)
 -- ============================================================================
 
-CREATE TYPE account_status AS ENUM ('ACTIVE', 'INACTIVE', 'ARCHIVED');
-CREATE TYPE transaction_type AS ENUM ('RECEITA', 'DESPESA');
-CREATE TYPE classification_source AS ENUM ('RULE', 'OVERRIDE', 'NONE');
-CREATE TYPE matcher_type AS ENUM ('CONTAINS', 'REGEX');
-CREATE TYPE encoding_type AS ENUM ('UTF8', 'LATIN1');
+DO $$ BEGIN
+  CREATE TYPE account_status AS ENUM ('ACTIVE', 'INACTIVE', 'ARCHIVED');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE transaction_type AS ENUM ('RECEITA', 'DESPESA');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE classification_source AS ENUM ('RULE', 'OVERRIDE', 'NONE');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE matcher_type AS ENUM ('CONTAINS', 'REGEX');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE encoding_type AS ENUM ('UTF8', 'LATIN1');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- ============================================================================
 -- TABLES
@@ -27,8 +46,8 @@ CREATE TABLE IF NOT EXISTS account (
   CONSTRAINT account_name_not_empty CHECK (length(trim(name)) > 0)
 );
 
-CREATE INDEX idx_account_status ON account(status);
-CREATE INDEX idx_account_created_at ON account(created_at);
+CREATE INDEX IF NOT EXISTS idx_account_status ON account(status);
+CREATE INDEX IF NOT EXISTS idx_account_created_at ON account(created_at);
 
 COMMENT ON TABLE account IS 'Bank accounts that users upload CSV data for';
 COMMENT ON COLUMN account.id IS 'Unique account identifier';
@@ -45,8 +64,8 @@ CREATE TABLE IF NOT EXISTS category (
   CONSTRAINT category_name_not_empty CHECK (length(trim(name)) > 0)
 );
 
-CREATE INDEX idx_category_tipo ON category(tipo);
-CREATE INDEX idx_category_name ON category(name);
+CREATE INDEX IF NOT EXISTS idx_category_tipo ON category(tipo);
+CREATE INDEX IF NOT EXISTS idx_category_name ON category(name);
 
 COMMENT ON TABLE category IS 'Transaction categories used for classification';
 COMMENT ON COLUMN category.id IS 'Unique category identifier';
@@ -67,10 +86,10 @@ CREATE TABLE IF NOT EXISTS import_batch (
   UNIQUE(account_id, file_checksum, period_month, period_year)
 );
 
-CREATE INDEX idx_import_batch_account_id ON import_batch(account_id);
-CREATE INDEX idx_import_batch_uploaded_at ON import_batch(uploaded_at);
-CREATE INDEX idx_import_batch_period ON import_batch(period_year, period_month);
-CREATE INDEX idx_import_batch_checksum ON import_batch(file_checksum);
+CREATE INDEX IF NOT EXISTS idx_import_batch_account_id ON import_batch(account_id);
+CREATE INDEX IF NOT EXISTS idx_import_batch_uploaded_at ON import_batch(uploaded_at);
+CREATE INDEX IF NOT EXISTS idx_import_batch_period ON import_batch(period_year, period_month);
+CREATE INDEX IF NOT EXISTS idx_import_batch_checksum ON import_batch(file_checksum);
 
 COMMENT ON TABLE import_batch IS 'Metadata for each CSV file import';
 COMMENT ON COLUMN import_batch.id IS 'Unique batch identifier';
@@ -93,10 +112,10 @@ CREATE TABLE IF NOT EXISTS rule (
   CONSTRAINT rule_pattern_not_empty CHECK (length(trim(pattern)) > 0)
 );
 
-CREATE INDEX idx_rule_active ON rule(active);
-CREATE INDEX idx_rule_category_id ON rule(category_id);
-CREATE INDEX idx_rule_tipo ON rule(tipo);
-CREATE INDEX idx_rule_created_at ON rule(created_at);
+CREATE INDEX IF NOT EXISTS idx_rule_active ON rule(active);
+CREATE INDEX IF NOT EXISTS idx_rule_category_id ON rule(category_id);
+CREATE INDEX IF NOT EXISTS idx_rule_tipo ON rule(tipo);
+CREATE INDEX IF NOT EXISTS idx_rule_created_at ON rule(created_at);
 
 COMMENT ON TABLE rule IS 'Rules for automatic transaction classification';
 COMMENT ON COLUMN rule.id IS 'Unique rule identifier';
@@ -133,13 +152,13 @@ CREATE TABLE IF NOT EXISTS transaction (
   )
 );
 
-CREATE INDEX idx_transaction_account_id ON transaction(account_id);
-CREATE INDEX idx_transaction_batch_id ON transaction(batch_id);
-CREATE INDEX idx_transaction_category_id ON transaction(category_id);
-CREATE INDEX idx_transaction_date ON transaction(date);
-CREATE INDEX idx_transaction_created_at ON transaction(created_at);
-CREATE INDEX idx_transaction_documento ON transaction(documento_normalized);
-CREATE INDEX idx_transaction_unclassified ON transaction(account_id, category_id) WHERE category_id IS NULL;
+CREATE INDEX IF NOT EXISTS idx_transaction_account_id ON transaction(account_id);
+CREATE INDEX IF NOT EXISTS idx_transaction_batch_id ON transaction(batch_id);
+CREATE INDEX IF NOT EXISTS idx_transaction_category_id ON transaction(category_id);
+CREATE INDEX IF NOT EXISTS idx_transaction_date ON transaction(date);
+CREATE INDEX IF NOT EXISTS idx_transaction_created_at ON transaction(created_at);
+CREATE INDEX IF NOT EXISTS idx_transaction_documento ON transaction(documento_normalized);
+CREATE INDEX IF NOT EXISTS idx_transaction_unclassified ON transaction(account_id, category_id) WHERE category_id IS NULL;
 
 COMMENT ON TABLE transaction IS 'Imported bank transactions';
 COMMENT ON COLUMN transaction.id IS 'Unique transaction identifier';
@@ -163,9 +182,9 @@ CREATE TABLE IF NOT EXISTS classification_override (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_classification_override_transaction_id ON classification_override(transaction_id);
-CREATE INDEX idx_classification_override_created_at ON classification_override(created_at);
-CREATE INDEX idx_classification_override_actor ON classification_override(actor);
+CREATE INDEX IF NOT EXISTS idx_classification_override_transaction_id ON classification_override(transaction_id);
+CREATE INDEX IF NOT EXISTS idx_classification_override_created_at ON classification_override(created_at);
+CREATE INDEX IF NOT EXISTS idx_classification_override_actor ON classification_override(actor);
 
 COMMENT ON TABLE classification_override IS 'Audit trail for manual classification changes';
 COMMENT ON COLUMN classification_override.id IS 'Unique override record identifier';
@@ -199,7 +218,7 @@ GROUP BY
   t.category_id,
   c.tipo;
 
-CREATE UNIQUE INDEX idx_mv_category_totals_unique ON mv_category_totals(year, month, account_id, category_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_category_totals_unique ON mv_category_totals(year, month, account_id, category_id);
 
 COMMENT ON MATERIALIZED VIEW mv_category_totals IS 'Aggregated transaction totals by category, month, and account (for fast reporting queries)';
 

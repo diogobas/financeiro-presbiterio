@@ -39,6 +39,14 @@ export class PostgresAccountRepository implements IAccountRepository {
     return result.rows[0] || null;
   }
 
+  async findByAccountNumber(accountNumber: string): Promise<Account | null> {
+    const result = await getPool().query<Account>(
+      'SELECT * FROM account WHERE account_number = $1',
+      [accountNumber]
+    );
+    return result.rows[0] || null;
+  }
+
   async findAll(status?: AccountStatus): Promise<Account[]> {
     const query = status
       ? 'SELECT * FROM account WHERE status = $1 ORDER BY name'
@@ -50,10 +58,10 @@ export class PostgresAccountRepository implements IAccountRepository {
 
   async create(input: CreateAccountInput): Promise<Account> {
     const result = await getPool().query<Account>(
-      `INSERT INTO account (name, bank_name, status) 
-       VALUES ($1, $2, $3) 
+      `INSERT INTO account (name, bank_name, account_number, status) 
+       VALUES ($1, $2, $3, $4) 
        RETURNING *`,
-      [input.name, input.bankName || null, input.status || 'ACTIVE']
+      [input.name, input.bankName || null, input.accountNumber || null, input.status || 'ACTIVE']
     );
     return result.rows[0];
   }
@@ -70,6 +78,10 @@ export class PostgresAccountRepository implements IAccountRepository {
     if (updates.bankName !== undefined) {
       fields.push(`bank_name = $${paramCount++}`);
       values.push(updates.bankName);
+    }
+    if (updates.accountNumber !== undefined) {
+      fields.push(`account_number = $${paramCount++}`);
+      values.push(updates.accountNumber);
     }
     if (updates.status !== undefined) {
       fields.push(`status = $${paramCount++}`);
@@ -257,6 +269,106 @@ export class PostgresImportBatchRepository implements IImportBatchRepository {
       dateRange: { from: row.min_date, to: row.max_date },
     };
   }
+
+  /**
+   * Find batch by checksum with account and period (duplicate detection)
+   */
+  async findByChecksum(
+    accountId: string,
+    fileChecksum: string,
+    periodMonth: number,
+    periodYear: number
+  ): Promise<ImportBatch | null> {
+    const result = await getPool().query<ImportBatch>(
+      `SELECT * FROM import_batch
+       WHERE account_id = $1 AND file_checksum = $2 AND period_month = $3 AND period_year = $4`,
+      [accountId, fileChecksum, periodMonth, periodYear]
+    );
+    return result.rows[0] || null;
+  }
+
+  /**
+   * Find all batches for an account
+   */
+  async findByAccountId(
+    accountId: string,
+    periodMonth?: number,
+    periodYear?: number
+  ): Promise<ImportBatch[]> {
+    let sql = 'SELECT * FROM import_batch WHERE account_id = $1';
+    const params: any[] = [accountId];
+    let paramIndex = 2;
+
+    if (periodMonth !== undefined) {
+      sql += ` AND period_month = $${paramIndex++}`;
+      params.push(periodMonth);
+    }
+
+    if (periodYear !== undefined) {
+      sql += ` AND period_year = $${paramIndex++}`;
+      params.push(periodYear);
+    }
+
+    sql += ' ORDER BY uploaded_at DESC';
+    const result = await getPool().query<ImportBatch>(sql, params);
+    return result.rows;
+  }
+
+  /**
+   * Find batches by account (paginated)
+   */
+  async findAllByAccountId(
+    accountId: string,
+    limit: number = 50,
+    offset: number = 0
+  ): Promise<{ batches: ImportBatch[]; total: number }> {
+    const batches = await getPool().query<ImportBatch>(
+      'SELECT * FROM import_batch WHERE account_id = $1 ORDER BY uploaded_at DESC LIMIT $2 OFFSET $3',
+      [accountId, limit, offset]
+    );
+
+    const countResult = await getPool().query<{ count: string }>(
+      'SELECT COUNT(*) as count FROM import_batch WHERE account_id = $1',
+      [accountId]
+    );
+
+    return {
+      batches: batches.rows,
+      total: parseInt(countResult.rows[0].count),
+    };
+  }
+
+  /**
+   * Update row count after import
+   */
+  async updateRowCount(id: string, rowCount: number): Promise<ImportBatch> {
+    const result = await getPool().query<ImportBatch>(
+      'UPDATE import_batch SET row_count = $1 WHERE id = $2 RETURNING *',
+      [rowCount, id]
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error(`ImportBatch with id ${id} not found`);
+    }
+
+    return result.rows[0];
+  }
+
+  /**
+   * Get all unique months that have been uploaded
+   */
+  async getUploadedMonths(): Promise<Array<{ month: number; year: number }>> {
+    const result = await getPool().query<{ period_month: number; period_year: number }>(
+      `SELECT DISTINCT period_month, period_year FROM import_batch 
+       WHERE period_month IS NOT NULL AND period_year IS NOT NULL
+       ORDER BY period_year DESC, period_month DESC`
+    );
+
+    return result.rows.map((row) => ({
+      month: row.period_month,
+      year: row.period_year,
+    }));
+  }
 }
 
 /**
@@ -278,13 +390,62 @@ export class PostgresTransactionRepository implements ITransactionRepository {
     return result.rows;
   }
 
-  async findUnclassified(accountId?: string): Promise<Transaction[]> {
-    const query = accountId
-      ? 'SELECT * FROM transaction WHERE account_id = $1 AND category_id IS NULL ORDER BY date DESC LIMIT 1000'
-      : 'SELECT * FROM transaction WHERE category_id IS NULL ORDER BY date DESC LIMIT 1000';
-    const params = accountId ? [accountId] : [];
-    const result = await getPool().query<Transaction>(query, params);
+  /**
+   * Find all transactions in a batch
+   */
+  async findByBatchId(batchId: string): Promise<Transaction[]> {
+    const result = await getPool().query<Transaction>(
+      'SELECT * FROM transaction WHERE batch_id = $1 ORDER BY date ASC, created_at ASC',
+      [batchId]
+    );
     return result.rows;
+  }
+
+  /**
+   * Find transactions by batch and classification status
+   */
+  async findByBatchAndStatus(
+    batchId: string,
+    status: 'classified' | 'unclassified'
+  ): Promise<Transaction[]> {
+    let sql = 'SELECT * FROM transaction WHERE batch_id = $1';
+    const params: any[] = [batchId];
+
+    if (status === 'classified') {
+      sql += ' AND category_id IS NOT NULL';
+    } else {
+      sql += ' AND category_id IS NULL';
+    }
+
+    sql += ' ORDER BY date ASC';
+    const result = await getPool().query<Transaction>(sql, params);
+    return result.rows;
+  }
+
+  /**
+   * Find unclassified transactions (paginated)
+   */
+  async findUnclassified(
+    accountId: string,
+    limit: number = 50,
+    offset: number = 0
+  ): Promise<{ transactions: Transaction[]; total: number }> {
+    const transactions = await getPool().query<Transaction>(
+      `SELECT * FROM transaction 
+       WHERE account_id = $1 AND category_id IS NULL
+       ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
+      [accountId, limit, offset]
+    );
+
+    const countResult = await getPool().query<{ count: string }>(
+      'SELECT COUNT(*) as count FROM transaction WHERE account_id = $1 AND category_id IS NULL',
+      [accountId]
+    );
+
+    return {
+      transactions: transactions.rows,
+      total: parseInt(countResult.rows[0].count),
+    };
   }
 
   async findByDateRange(
@@ -369,6 +530,30 @@ export class PostgresTransactionRepository implements ITransactionRepository {
     return result.rows;
   }
 
+  /**
+   * Find transactions by account (paginated)
+   */
+  async findByAccountId(
+    accountId: string,
+    limit: number = 50,
+    offset: number = 0
+  ): Promise<{ transactions: Transaction[]; total: number }> {
+    const transactions = await getPool().query<Transaction>(
+      'SELECT * FROM transaction WHERE account_id = $1 ORDER BY date DESC, created_at DESC LIMIT $2 OFFSET $3',
+      [accountId, limit, offset]
+    );
+
+    const countResult = await getPool().query<{ count: string }>(
+      'SELECT COUNT(*) as count FROM transaction WHERE account_id = $1',
+      [accountId]
+    );
+
+    return {
+      transactions: transactions.rows,
+      total: parseInt(countResult.rows[0].count),
+    };
+  }
+
   async updateClassification(
     id: string,
     categoryId: string,
@@ -384,6 +569,104 @@ export class PostgresTransactionRepository implements ITransactionRepository {
       [categoryId, source, ruleId || null, rationale || null, id]
     );
     return result.rows[0];
+  }
+
+  /**
+   * Update transaction (for classification)
+   */
+  async update(
+    id: string,
+    updates: Partial<{
+      categoryId: string;
+      tipo: 'RECEITA' | 'DESPESA';
+      classificationSource: 'RULE' | 'OVERRIDE' | 'NONE';
+      ruleId: string;
+      ruleVersion: number;
+      rationale: string;
+    }>
+  ): Promise<Transaction> {
+    const setClauses: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+
+    if (updates.categoryId !== undefined) {
+      setClauses.push(`category_id = $${paramIndex++}`);
+      values.push(updates.categoryId);
+    }
+
+    if (updates.tipo !== undefined) {
+      setClauses.push(`tipo = $${paramIndex++}`);
+      values.push(updates.tipo);
+    }
+
+    if (updates.classificationSource !== undefined) {
+      setClauses.push(`classification_source = $${paramIndex++}`);
+      values.push(updates.classificationSource);
+    }
+
+    if (updates.ruleId !== undefined) {
+      setClauses.push(`rule_id = $${paramIndex++}`);
+      values.push(updates.ruleId);
+    }
+
+    if (updates.ruleVersion !== undefined) {
+      setClauses.push(`rule_version = $${paramIndex++}`);
+      values.push(updates.ruleVersion);
+    }
+
+    if (updates.rationale !== undefined) {
+      setClauses.push(`rationale = $${paramIndex++}`);
+      values.push(updates.rationale);
+    }
+
+    if (setClauses.length === 0) {
+      return this.findById(id) as Promise<Transaction>;
+    }
+
+    setClauses.push(`updated_at = CURRENT_TIMESTAMP`);
+    values.push(id);
+
+    const sql = `UPDATE transaction SET ${setClauses.join(', ')} WHERE id = $${paramIndex} RETURNING *`;
+    const result = await getPool().query<Transaction>(sql, values);
+
+    if (result.rows.length === 0) {
+      throw new Error(`Transaction with id ${id} not found`);
+    }
+
+    return result.rows[0];
+  }
+
+  /**
+   * Count transactions in a batch
+   */
+  async countByBatchId(batchId: string): Promise<number> {
+    const result = await getPool().query<{ count: string }>(
+      'SELECT COUNT(*) as count FROM transaction WHERE batch_id = $1',
+      [batchId]
+    );
+    return parseInt(result.rows[0].count);
+  }
+
+  /**
+   * Count classified vs unclassified for a batch
+   */
+  async getClassificationStats(batchId: string): Promise<{
+    classified: number;
+    unclassified: number;
+  }> {
+    const result = await getPool().query<any>(
+      `SELECT
+        COUNT(CASE WHEN category_id IS NOT NULL THEN 1 END) as classified,
+        COUNT(CASE WHEN category_id IS NULL THEN 1 END) as unclassified
+      FROM transaction
+      WHERE batch_id = $1`,
+      [batchId]
+    );
+
+    return {
+      classified: parseInt(result.rows[0].classified),
+      unclassified: parseInt(result.rows[0].unclassified),
+    };
   }
 
   async countUnclassified(accountId?: string): Promise<number> {

@@ -3,7 +3,9 @@ package org.example.financeiro.reporting.domain
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.util.UUID
 import jakarta.persistence.*
+import org.hibernate.annotations.Immutable
 
 /**
  * Account Entity - JPA mapping for bank accounts
@@ -13,7 +15,7 @@ import jakarta.persistence.*
 @Table(name = "account")
 data class Account(
     @Id
-    val id: String = "",
+    val id: UUID = UUID.fromString("00000000-0000-0000-0000-000000000000"),
 
     @Column(nullable = false, length = 255)
     val name: String = "",
@@ -56,7 +58,7 @@ enum class AccountStatus {
 ])
 data class Category(
     @Id
-    val id: String = "",
+    val id: UUID = UUID.fromString("00000000-0000-0000-0000-000000000000"),
 
     @Column(nullable = false, length = 255, unique = true)
     val name: String = "",
@@ -97,7 +99,7 @@ enum class TransactionType {
 ])
 data class ImportBatch(
     @Id
-    val id: String = "",
+    val id: UUID = UUID.fromString("00000000-0000-0000-0000-000000000000"),
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id", nullable = false)
@@ -152,7 +154,7 @@ enum class EncodingType {
 ])
 data class Transaction(
     @Id
-    val id: String = "",
+    val id: UUID = UUID.fromString("00000000-0000-0000-0000-000000000000"),
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id", nullable = false)
@@ -225,7 +227,7 @@ enum class ClassificationSource {
 ])
 data class Rule(
     @Id
-    val id: String = "",
+    val id: UUID = UUID.fromString("00000000-0000-0000-0000-000000000000"),
 
     @Column(nullable = false)
     val version: Int = 1,
@@ -277,7 +279,7 @@ enum class MatcherType {
 ])
 data class ClassificationOverride(
     @Id
-    val id: String = "",
+    val id: UUID = UUID.fromString("00000000-0000-0000-0000-000000000000"),
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "transaction_id", nullable = false, unique = true)
@@ -318,7 +320,9 @@ data class ClassificationOverride(
  */
 @Entity
 @Table(name = "mv_category_totals")
+@Immutable
 data class CategoryTotalsView(
+    @Id
     @Column(nullable = false)
     val year: Int = 2025,
 
@@ -326,10 +330,10 @@ data class CategoryTotalsView(
     val month: Int = 1,
 
     @Column(name = "account_id", nullable = false)
-    val accountId: String = "",
+    val accountId: UUID = UUID.fromString("00000000-0000-0000-0000-000000000000"),
 
     @Column(name = "category_id")
-    val categoryId: String? = null,
+    val categoryId: UUID? = null,
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
@@ -339,12 +343,8 @@ data class CategoryTotalsView(
     val totalAmount: BigDecimal = BigDecimal.ZERO,
 
     @Column(name = "row_count", nullable = false)
-    val rowCount: Int = 0,
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val viewId: Long = 0
+    val rowCount: Int = 0
 ) {
-    override fun equals(other: Any?) = other is CategoryTotalsView && viewId == other.viewId
-    override fun hashCode() = viewId.hashCode()
+    override fun equals(other: Any?) = other is CategoryTotalsView && year == other.year && month == other.month && accountId == other.accountId && categoryId == other.categoryId
+    override fun hashCode() = year.hashCode() xor month.hashCode() xor accountId.hashCode() xor (categoryId?.hashCode() ?: 0)
 }

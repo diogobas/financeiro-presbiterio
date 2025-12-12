@@ -2,7 +2,6 @@ package org.example.financeiro.reporting.security
 
 import io.jsonwebtoken.JwtException
 import io.jsonwebtoken.Jwts
-import io.jsonwebtoken.SignatureAlgorithm
 import io.jsonwebtoken.security.Keys
 import java.util.Date
 import javax.crypto.SecretKey
@@ -56,7 +55,7 @@ class JWTProvider(
             .claim("roles", roles)
             .issuedAt(now)
             .expiration(expiryDate)
-            .signWith(signingKey, SignatureAlgorithm.HS256)
+            .signWith(signingKey)
             .compact()
     }
 
@@ -71,7 +70,7 @@ class JWTProvider(
             .subject(userId)
             .issuedAt(now)
             .expiration(expiryDate)
-            .signWith(refreshSigningKey, SignatureAlgorithm.HS256)
+            .signWith(refreshSigningKey)
             .compact()
     }
 

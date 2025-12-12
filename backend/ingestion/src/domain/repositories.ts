@@ -18,6 +18,7 @@ import {
   CreateRuleInput,
   CreateClassificationOverrideInput,
   AccountStatus,
+  ClassificationSource,
 } from './types';
 
 /**
@@ -28,6 +29,11 @@ export interface IAccountRepository {
    * Find account by ID
    */
   findById(id: string): Promise<Account | null>;
+
+  /**
+   * Find account by account number
+   */
+  findByAccountNumber(accountNumber: string): Promise<Account | null>;
 
   /**
    * Find all accounts for a user/organization
@@ -110,20 +116,32 @@ export interface IImportBatchRepository {
   findById(id: string): Promise<ImportBatch | null>;
 
   /**
-   * Find batch by account and checksum
-   * Used to detect duplicate imports
+   * Find batch by checksum with account and period (duplicate detection)
    */
-  findByAccountAndChecksum(accountId: string, checksum: string): Promise<ImportBatch | null>;
+  findByChecksum(
+    accountId: string,
+    fileChecksum: string,
+    periodMonth: number,
+    periodYear: number
+  ): Promise<ImportBatch | null>;
 
   /**
    * Find all batches for an account
    */
-  findByAccount(accountId: string): Promise<ImportBatch[]>;
+  findByAccountId(
+    accountId: string,
+    periodMonth?: number,
+    periodYear?: number
+  ): Promise<ImportBatch[]>;
 
   /**
-   * Find batches by period
+   * Find batches by account (paginated)
    */
-  findByPeriod(year: number, month: number): Promise<ImportBatch[]>;
+  findAllByAccountId(
+    accountId: string,
+    limit?: number,
+    offset?: number
+  ): Promise<{ batches: ImportBatch[]; total: number }>;
 
   /**
    * Create a new batch
@@ -131,13 +149,23 @@ export interface IImportBatchRepository {
   create(input: CreateImportBatchInput): Promise<ImportBatch>;
 
   /**
+   * Update row count after import
+   */
+  updateRowCount(id: string, rowCount: number): Promise<ImportBatch>;
+
+  /**
    * Get batch statistics
    */
-  getStats(accountId: string): Promise<{
+  getStats?(accountId: string): Promise<{
     totalBatches: number;
     totalTransactions: number;
     dateRange: { from: Date; to: Date };
   }>;
+
+  /**
+   * Get all unique months that have been uploaded
+   */
+  getUploadedMonths(): Promise<Array<{ month: number; year: number }>>;
 }
 
 /**
@@ -150,24 +178,35 @@ export interface ITransactionRepository {
   findById(id: string): Promise<Transaction | null>;
 
   /**
-   * Find transactions in a batch
+   * Find all transactions in a batch
    */
-  findByBatch(batchId: string): Promise<Transaction[]>;
+  findByBatchId(batchId: string): Promise<Transaction[]>;
 
   /**
-   * Find unclassified transactions
+   * Find transactions by batch and classification status
    */
-  findUnclassified(accountId?: string): Promise<Transaction[]>;
+  findByBatchAndStatus(
+    batchId: string,
+    status: 'classified' | 'unclassified'
+  ): Promise<Transaction[]>;
 
   /**
-   * Find transactions by date range
+   * Find unclassified transactions for an account (paginated)
    */
-  findByDateRange(startDate: Date, endDate: Date, accountId?: string): Promise<Transaction[]>;
+  findUnclassified(
+    accountId: string,
+    limit?: number,
+    offset?: number
+  ): Promise<{ transactions: Transaction[]; total: number }>;
 
   /**
-   * Find transactions by category
+   * Find transactions by account (paginated)
    */
-  findByCategory(categoryId: string): Promise<Transaction[]>;
+  findByAccountId(
+    accountId: string,
+    limit?: number,
+    offset?: number
+  ): Promise<{ transactions: Transaction[]; total: number }>;
 
   /**
    * Create a new transaction
@@ -182,31 +221,29 @@ export interface ITransactionRepository {
   /**
    * Update transaction classification
    */
-  updateClassification(
+  update(
     id: string,
-    categoryId: string,
-    source: 'RULE' | 'OVERRIDE',
-    ruleId?: string,
-    rationale?: string
+    updates: Partial<{
+      categoryId: string;
+      tipo: 'RECEITA' | 'DESPESA';
+      classificationSource: ClassificationSource;
+      ruleId: string;
+      ruleVersion: number;
+      rationale: string;
+    }>
   ): Promise<Transaction>;
 
   /**
-   * Count unclassified transactions
+   * Count transactions in a batch
    */
-  countUnclassified(accountId?: string): Promise<number>;
+  countByBatchId(batchId: string): Promise<number>;
 
   /**
-   * Get transaction statistics
+   * Get classification stats for a batch
    */
-  getStats(
-    accountId?: string,
-    startDate?: Date,
-    endDate?: Date
-  ): Promise<{
-    total: number;
+  getClassificationStats(batchId: string): Promise<{
     classified: number;
     unclassified: number;
-    byType: Record<string, number>;
   }>;
 }
 

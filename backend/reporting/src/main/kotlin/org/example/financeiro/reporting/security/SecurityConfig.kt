@@ -42,13 +42,13 @@ class SecurityConfig(
             }
             .exceptionHandling { handler ->
                 handler
-                    .authenticationEntryPoint { request, response, authException ->
+                    .authenticationEntryPoint { _, response, authException ->
                         response.sendError(
                             HttpServletResponse.SC_UNAUTHORIZED,
                             "Unauthorized: ${authException.message}",
                         )
                     }
-                    .accessDeniedHandler { request, response, accessDeniedException ->
+                    .accessDeniedHandler { _, response, accessDeniedException ->
                         response.sendError(
                             HttpServletResponse.SC_FORBIDDEN,
                             "Access denied: ${accessDeniedException.message}",
