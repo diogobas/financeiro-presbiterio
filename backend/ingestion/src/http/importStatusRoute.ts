@@ -1,5 +1,6 @@
 /**
  * GET /imports/{id} - Get import status and summary
+ * GET /imports/months - Get list of uploaded months
  * Returns ImportBatch metadata and classification statistics
  */
 
@@ -9,6 +10,33 @@ import { PostgresTransactionRepository } from '../infrastructure/repositories';
 
 const importBatchRepo = new PostgresImportBatchRepository();
 const transactionRepo = new PostgresTransactionRepository();
+
+/**
+ * GET /imports/months handler
+ * Returns list of already uploaded months
+ */
+export async function getUploadedMonthsHandler(
+  request: FastifyRequest,
+  reply: FastifyReply
+): Promise<void> {
+  try {
+    const months = await importBatchRepo.getUploadedMonths();
+
+    reply.code(200).send({
+      months: months.sort((a, b) => {
+        // Sort by year desc, then month desc (most recent first)
+        if (b.year !== a.year) return b.year - a.year;
+        return b.month - a.month;
+      }),
+    });
+  } catch (err) {
+    console.error('Error in GET /imports/months:', err);
+    reply.code(500).send({
+      error: 'INTERNAL_ERROR',
+      message: 'Failed to fetch uploaded months',
+    });
+  }
+}
 
 /**
  * GET /imports/{id} handler
@@ -69,12 +97,11 @@ export async function getImportStatusHandler(
     });
   }
 }
-
 /**
- * Export handler for registration
+ * Export handlers for registration
  */
 export default {
   method: 'GET' as const,
-  url: '/imports/:id',
+  url: '/imports/batches/:id',
   handler: getImportStatusHandler,
 };

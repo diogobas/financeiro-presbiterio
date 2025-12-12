@@ -25,12 +25,12 @@ export interface TransactionRow {
 export function parseDate(dateStr: string): Date {
   const trimmed = dateStr.trim();
 
-  // Validate format: DD/MM/YYYY
-  const dateRegex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+  // Validate format: DD/MM/YYYY or D/M/YYYY (allows 1-2 digits for day and month)
+  const dateRegex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
   const match = trimmed.match(dateRegex);
 
   if (!match) {
-    throw new Error(`Invalid date format: "${dateStr}". Expected DD/MM/YYYY`);
+    throw new Error(`Invalid date format: "${dateStr}". Expected DD/MM/YYYY or D/M/YYYY`);
   }
 
   const day = parseInt(match[1], 10);
@@ -147,10 +147,12 @@ function normalizeDocumento(documento: string): string {
 /**
  * Parse a single CSV row (array of columns)
  *
- * Expected column order:
+ * Expected column order (from bank extract):
  * 0: Data (DD/MM/YYYY)
- * 1: Documento (string)
- * 2: Valor (pt-BR amount)
+ * 1: Descrição (description)
+ * 2: Documento (document code)
+ * 3: Valor (R$) (pt-BR amount)
+ * 4: Saldo (R$) (balance - optional, ignored)
  *
  * Additional columns are ignored.
  *
@@ -159,13 +161,13 @@ function normalizeDocumento(documento: string): string {
  * @throws Error if required columns are missing or invalid
  */
 export function parseCSVRow(columns: string[]): TransactionRow {
-  if (columns.length < 3) {
-    throw new Error(`Insufficient columns: expected at least 3, got ${columns.length}`);
+  if (columns.length < 4) {
+    throw new Error(`Insufficient columns: expected at least 4, got ${columns.length}`);
   }
 
   const dateStr = columns[0];
-  const documentoStr = columns[1];
-  const amountStr = columns[2];
+  const documentoStr = columns[2]; // Documento is at index 2, not 1
+  const amountStr = columns[3]; // Valor is at index 3, not 2
 
   // Validate non-empty required fields
   if (!dateStr || !dateStr.trim()) {
@@ -183,4 +185,164 @@ export function parseCSVRow(columns: string[]): TransactionRow {
   const amount = parseAmount(amountStr);
 
   return { date, documento, amount };
+}
+
+/**
+ * Account section extracted from multi-account CSV
+ */
+export interface AccountSection {
+  accountNumber: string;
+  transactions: TransactionRow[];
+}
+
+/**
+ * Extract account sections from multi-account CSV content
+ *
+ * Format:
+ * Conta: [account-number]
+ * [optional metadata lines]
+ * Data,Descrição,Documento,Valor (R$),Saldo (R$)
+ * [transaction rows]
+ * [blank line]
+ * Conta: [next-account-number]
+ * ...
+ *
+ * @param fileContent - Raw file content as string
+ * @returns Array of AccountSection objects with extracted transactions
+ */
+export function extractAccountSections(fileContent: string): AccountSection[] {
+  const lines = fileContent.split('\n');
+  const sections: AccountSection[] = [];
+  let currentAccountNumber: string | null = null;
+  let currentTransactions: TransactionRow[] = [];
+
+  console.log(`[CSV Parser] Processing ${lines.length} lines from file`);
+  console.log(`[CSV Parser] First 5 lines preview:`);
+  for (let i = 0; i < Math.min(5, lines.length); i++) {
+    console.log(`  Line ${i}: ${JSON.stringify(lines[i].substring(0, 100))}`);
+  }
+
+  let nonEmptyLineCount = 0;
+  let linesSinceLastAccount = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    // Skip empty lines
+    if (!line) {
+      linesSinceLastAccount++;
+      continue;
+    }
+
+    nonEmptyLineCount++;
+    linesSinceLastAccount++;
+
+    // Log lines that contain "Conta" for debugging
+    if (line.includes('Conta')) {
+      console.log(`[CSV Parser] Found "Conta" at line ${i}: ${line.substring(0, 100)}`);
+    }
+
+    // Look for "Conta: [number]" or "Conta:,[number]" headers (handles both formats)
+    if (line.includes('Conta:')) {
+      console.log(`[CSV Parser] Processing account line: ${line.substring(0, 100)}`);
+
+      // If we have a previous account with transactions, save it
+      if (currentAccountNumber && currentTransactions.length > 0) {
+        console.log(
+          `[CSV Parser] Saving account ${currentAccountNumber} with ${currentTransactions.length} transactions`
+        );
+        sections.push({
+          accountNumber: currentAccountNumber,
+          transactions: currentTransactions,
+        });
+      }
+
+      // Extract account number from different formats:
+      // Format 1: "Conta: 70011-8"
+      // Format 2: "Conta:,70011-8," (CSV format)
+      let accountMatch = line.match(/Conta:\s*([^\s,]+(?:\s+[^\s,]+)?)/);
+
+      // If format 1 didn't work, try CSV format (look for content after "Conta:" and comma)
+      if (!accountMatch) {
+        const parts = line.split(',');
+        const contaIndex = parts.findIndex((p) => p.includes('Conta:'));
+        if (contaIndex >= 0 && contaIndex + 1 < parts.length) {
+          const accountNum = parts[contaIndex + 1].trim();
+          if (accountNum) {
+            accountMatch = [line, accountNum]; // Create match-like array
+          }
+        }
+      }
+
+      if (accountMatch) {
+        currentAccountNumber = accountMatch[1].trim();
+        currentTransactions = [];
+        console.log(`[CSV Parser] Found account: ${currentAccountNumber}`);
+      }
+      continue;
+    }
+
+    // Skip header lines (Data, Descrição, Documento, Valor, Saldo, etc.)
+    // These typically contain common column names
+    if (line.includes('Data') || line.includes('Saldo Anterior') || line.includes('Saldo Final')) {
+      if (currentAccountNumber) {
+        console.log(`[CSV Parser] Skipping header line in account ${currentAccountNumber}`);
+      }
+      continue;
+    }
+
+    // Parse transaction lines
+    // A valid transaction starts with a date in DD/MM/YYYY or MM/D/YYYY format
+    if (currentAccountNumber) {
+      try {
+        const columns = line.split(',').map((col) => col.trim());
+        const firstCol = columns[0];
+        const dateRegex = /^\d{1,2}\/\d{1,2}\/\d{4}$/;
+        const isDate = firstCol && dateRegex.test(firstCol);
+
+        // Log ALL lines when we're in the BTG account or first few lines
+        if (currentAccountNumber === 'BTG 005897480' || nonEmptyLineCount <= 25) {
+          console.log(
+            `[CSV Parser] ${currentAccountNumber}: First="<${firstCol}>" IsDate=${isDate} Cols=${columns.length}`
+          );
+        }
+
+        // Check if this looks like a transaction row (starts with date)
+        if (isDate) {
+          const row = parseCSVRow(columns);
+          currentTransactions.push(row);
+          console.log(
+            `[CSV Parser] ✓ Parsed transaction for ${currentAccountNumber}: ${firstCol} - ${row.documento.substring(0, 30)}`
+          );
+        }
+      } catch (err) {
+        // Log errors for BTG account only
+        if (currentAccountNumber === 'BTG 005897480') {
+          console.log(
+            `[CSV Parser] ✗ Parse error for ${currentAccountNumber}: ${(err as Error).message}`
+          );
+        }
+      }
+    }
+  }
+
+  // Don't forget the last account
+  if (currentAccountNumber && currentTransactions.length > 0) {
+    console.log(
+      `[CSV Parser] Saving final account ${currentAccountNumber} with ${currentTransactions.length} transactions`
+    );
+    sections.push({
+      accountNumber: currentAccountNumber,
+      transactions: currentTransactions,
+    });
+  } else if (currentAccountNumber) {
+    console.log(`[CSV Parser] Final account ${currentAccountNumber} has no transactions, skipping`);
+  }
+
+  console.log(`[CSV Parser] Total accounts found: ${sections.length}`);
+  sections.forEach((s, i) => {
+    console.log(`  Account ${i + 1}: ${s.accountNumber} (${s.transactions.length} transactions)`);
+  });
+
+  return sections;
 }

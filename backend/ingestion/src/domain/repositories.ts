@@ -31,6 +31,11 @@ export interface IAccountRepository {
   findById(id: string): Promise<Account | null>;
 
   /**
+   * Find account by account number
+   */
+  findByAccountNumber(accountNumber: string): Promise<Account | null>;
+
+  /**
    * Find all accounts for a user/organization
    */
   findAll(status?: AccountStatus): Promise<Account[]>;
@@ -156,6 +161,11 @@ export interface IImportBatchRepository {
     totalTransactions: number;
     dateRange: { from: Date; to: Date };
   }>;
+
+  /**
+   * Get all unique months that have been uploaded
+   */
+  getUploadedMonths(): Promise<Array<{ month: number; year: number }>>;
 }
 
 /**

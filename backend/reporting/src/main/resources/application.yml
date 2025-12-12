@@ -50,8 +50,8 @@ logging:
 # ============================================================================
 
 jwt:
-  secret: ${JWT_SECRET}
-  refresh-secret: ${JWT_REFRESH_SECRET}
+  secret: ${JWT_SECRET:my-super-secret-jwt-key-for-development-only-change-in-production}
+  refresh-secret: ${JWT_REFRESH_SECRET:my-super-secret-refresh-key-for-development-only-change-in-production}
   access-token-expiry: ${JWT_ACCESS_TOKEN_EXPIRY:900000}
   refresh-token-expiry: ${JWT_REFRESH_TOKEN_EXPIRY:604800000}
 

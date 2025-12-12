@@ -8,7 +8,7 @@ import { createHash } from 'crypto';
 import { PostgresAccountRepository } from '../infrastructure/repositories';
 import { PostgresImportBatchRepository } from '../infrastructure/repositories';
 import { PostgresTransactionRepository } from '../infrastructure/repositories';
-import { parseCSVRow } from '../ingest/csvParser';
+import { extractAccountSections } from '../ingest/csvParser';
 
 const accountRepo = new PostgresAccountRepository();
 const importBatchRepo = new PostgresImportBatchRepository();
@@ -22,19 +22,67 @@ function calculateChecksum(data: Buffer): string {
 }
 
 /**
+ * Detect period (month/year) from account section transactions
+ * Returns the most common month/year in the transactions
+ */
+function detectPeriodFromTransactions(section: any): { month: number; year: number } {
+  if (!section.transactions || section.transactions.length === 0) {
+    // Fallback to current month/year
+    const now = new Date();
+    return { month: now.getMonth() + 1, year: now.getFullYear() };
+  }
+
+  // Count occurrences of each month/year combination
+  const periodCounts: { [key: string]: number } = {};
+
+  for (const transaction of section.transactions) {
+    if (transaction.date) {
+      const month = transaction.date.getMonth() + 1;
+      const year = transaction.date.getFullYear();
+      const key = `${year}-${month}`;
+      periodCounts[key] = (periodCounts[key] || 0) + 1;
+    }
+  }
+
+  // Find the most common month/year
+  let maxCount = 0;
+  let mostCommonPeriod = { month: new Date().getMonth() + 1, year: new Date().getFullYear() };
+
+  for (const [key, count] of Object.entries(periodCounts)) {
+    if (count > maxCount) {
+      maxCount = count;
+      const [year, month] = key.split('-').map(Number);
+      mostCommonPeriod = { month, year };
+    }
+  }
+
+  return mostCommonPeriod;
+}
+
+/**
  * POST /imports handler
- * Request: multipart/form-data with file, accountId, periodMonth, periodYear
- * Response: 202 Accepted with ImportBatch metadata
+ * Request: multipart/form-data with file
+ * Response: 202 Accepted with array of ImportBatch metadata (one per account)
  */
 export async function uploadImportsHandler(
   request: FastifyRequest,
   reply: FastifyReply
 ): Promise<void> {
   try {
-    // Parse multipart data
-    const data = await request.file();
+    // Extract file from multipart data
+    let fileBuffer: Buffer | undefined;
 
-    if (!data) {
+    // Iterate through all parts of the multipart form
+    const parts = request.parts();
+    for await (const part of parts) {
+      if (part.type === 'file') {
+        // This is the file field
+        fileBuffer = await part.toBuffer();
+      }
+    }
+
+    // Validate required fields
+    if (!fileBuffer) {
       reply.code(400).send({
         error: 'MISSING_FILE',
         message: 'File is required',
@@ -42,139 +90,115 @@ export async function uploadImportsHandler(
       return;
     }
 
-    // Get form fields
-    const { accountId, periodMonth, periodYear } = request.body as any;
-
-    // Validation
-    if (!accountId || !periodMonth || !periodYear) {
-      reply.code(400).send({
-        error: 'MISSING_FIELDS',
-        message: 'accountId, periodMonth, and periodYear are required',
-      });
-      return;
-    }
-
-    const month = parseInt(periodMonth, 10);
-    const year = parseInt(periodYear, 10);
-
-    if (month < 1 || month > 12) {
-      reply.code(400).send({
-        error: 'INVALID_PERIOD',
-        message: 'periodMonth must be 1-12',
-      });
-      return;
-    }
-
-    if (year < 2000 || year > 2100) {
-      reply.code(400).send({
-        error: 'INVALID_PERIOD',
-        message: 'periodYear must be between 2000 and 2100',
-      });
-      return;
-    }
-
-    // Verify account exists
-    const account = await accountRepo.findById(accountId);
-    if (!account) {
-      reply.code(404).send({
-        error: 'ACCOUNT_NOT_FOUND',
-        message: `Account ${accountId} not found`,
-      });
-      return;
-    }
-
-    // Read file content into buffer
-    const fileBuffer = await data.toBuffer();
+    // Calculate file checksum
     const fileChecksum = calculateChecksum(fileBuffer);
-
-    // Check for duplicate import
-    const existingBatch = await importBatchRepo.findByChecksum(
-      accountId,
-      fileChecksum,
-      month,
-      year
-    );
-
-    if (existingBatch) {
-      reply.code(409).send({
-        error: 'DUPLICATE_IMPORT',
-        message: 'This file has already been imported for this account and period',
-        batchId: existingBatch.id,
-        uploadedAt: existingBatch.uploadedAt,
-      });
-      return;
-    }
 
     // Detect encoding (UTF8 or LATIN1)
     const encoding = detectEncoding(fileBuffer);
 
     // Decode file content
     const fileContent = fileBuffer.toString(encoding.toLowerCase() === 'utf8' ? 'utf8' : 'latin1');
-    const lines = fileContent.split('\n');
 
-    // Create import batch record
+    // Extract account sections from CSV
+    const accountSections = extractAccountSections(fileContent);
+
+    if (accountSections.length === 0) {
+      reply.code(400).send({
+        error: 'NO_ACCOUNTS_FOUND',
+        message:
+          'CSV file contains no account sections. Expected "Conta: [account-number]" headers.',
+      });
+      return;
+    }
+
+    // Process each account
     const uploadedBy = (request.user as any)?.sub || 'anonymous';
-    const batch = await importBatchRepo.create({
-      accountId,
-      uploadedBy,
-      fileChecksum,
-      periodMonth: month,
-      periodYear: year,
-      encoding: encoding as 'UTF8' | 'LATIN1',
-      rowCount: 0,
-    });
+    const results = [];
 
-    // Parse CSV and create transactions (asynchronously)
-    // For MVP, we'll do this synchronously but you could make it async with a job queue
-    let rowCount = 0;
-    const transactions: any[] = [];
+    for (const section of accountSections) {
+      const accountNumber = section.accountNumber;
 
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) continue;
+      // Auto-detect period from transaction dates
+      const { month, year } = detectPeriodFromTransactions(section);
 
-      try {
-        // Parse CSV line into columns
-        const columns = line.split(',').map((col) => col.trim());
-        const row = parseCSVRow(columns);
-        transactions.push({
-          accountId,
-          batchId: batch.id,
-          date: row.date,
-          documento: row.documento,
-          amount: row.amount,
-          classificationSource: 'NONE',
+      // Get or create account
+      let account = await accountRepo.findByAccountNumber(accountNumber);
+      if (!account) {
+        account = await accountRepo.create({
+          accountNumber,
+          name: `Conta ${accountNumber}`,
         });
-        rowCount++;
-      } catch (err) {
-        // Log parsing errors but continue with next row
-        console.warn(
-          `Error parsing row ${i}: ${err instanceof Error ? err.message : 'Unknown error'}`
-        );
       }
+
+      // Check for duplicate import (same file, same account, same period)
+      const existingBatch = await importBatchRepo.findByChecksum(
+        account.id,
+        fileChecksum,
+        month,
+        year
+      );
+
+      if (existingBatch) {
+        results.push({
+          accountNumber,
+          accountId: account.id,
+          status: 'DUPLICATE',
+          batchId: existingBatch.id,
+          message: `File already imported for this account (${accountNumber}) and period (${month}/${year})`,
+          uploadedAt: existingBatch.uploadedAt,
+        });
+        continue;
+      }
+
+      // Create import batch record
+      const batch = await importBatchRepo.create({
+        accountId: account.id,
+        uploadedBy,
+        fileChecksum,
+        periodMonth: month,
+        periodYear: year,
+        encoding: encoding as 'UTF8' | 'LATIN1',
+        rowCount: 0,
+      });
+
+      // Create transaction records
+      const transactions = section.transactions.map((row) => ({
+        accountId: account.id,
+        batchId: batch.id,
+        date: row.date,
+        documento: row.documento,
+        amount: row.amount,
+        classificationSource: 'NONE' as const,
+      }));
+
+      if (transactions.length > 0) {
+        await transactionRepo.createMany(transactions);
+      }
+
+      // Update batch row count
+      await importBatchRepo.updateRowCount(batch.id, transactions.length);
+
+      results.push({
+        accountNumber,
+        accountId: account.id,
+        id: batch.id,
+        uploadedBy: batch.uploadedBy,
+        uploadedAt: batch.uploadedAt,
+        fileChecksum: batch.fileChecksum,
+        periodMonth: batch.periodMonth,
+        periodYear: batch.periodYear,
+        encoding: batch.encoding,
+        rowCount: transactions.length,
+        status: 'ACCEPTED',
+        message: `Imported ${transactions.length} transactions`,
+      });
     }
 
-    // Insert transactions
-    if (transactions.length > 0) {
-      await transactionRepo.createMany(transactions);
-    }
-
-    // Update batch row count
-    await importBatchRepo.updateRowCount(batch.id, rowCount);
-
-    // Return 202 Accepted with batch metadata
+    // Return 202 Accepted with results for all accounts
     reply.code(202).send({
-      id: batch.id,
-      accountId: batch.accountId,
-      uploadedBy: batch.uploadedBy,
-      uploadedAt: batch.uploadedAt,
-      fileChecksum: batch.fileChecksum,
-      periodMonth: batch.periodMonth,
-      periodYear: batch.periodYear,
-      encoding: batch.encoding,
-      rowCount: rowCount,
-      status: 'ACCEPTED',
-      message: `Import ${rowCount} transactions from CSV file`,
+      total: results.length,
+      results,
+      message: `Processed ${results.length} account(s)`,
     });
   } catch (err) {
     console.error('Error in POST /imports:', err);

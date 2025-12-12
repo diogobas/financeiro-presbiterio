@@ -39,6 +39,14 @@ export class PostgresAccountRepository implements IAccountRepository {
     return result.rows[0] || null;
   }
 
+  async findByAccountNumber(accountNumber: string): Promise<Account | null> {
+    const result = await getPool().query<Account>(
+      'SELECT * FROM account WHERE account_number = $1',
+      [accountNumber]
+    );
+    return result.rows[0] || null;
+  }
+
   async findAll(status?: AccountStatus): Promise<Account[]> {
     const query = status
       ? 'SELECT * FROM account WHERE status = $1 ORDER BY name'
@@ -50,10 +58,10 @@ export class PostgresAccountRepository implements IAccountRepository {
 
   async create(input: CreateAccountInput): Promise<Account> {
     const result = await getPool().query<Account>(
-      `INSERT INTO account (name, bank_name, status) 
-       VALUES ($1, $2, $3) 
+      `INSERT INTO account (name, bank_name, account_number, status) 
+       VALUES ($1, $2, $3, $4) 
        RETURNING *`,
-      [input.name, input.bankName || null, input.status || 'ACTIVE']
+      [input.name, input.bankName || null, input.accountNumber || null, input.status || 'ACTIVE']
     );
     return result.rows[0];
   }
@@ -70,6 +78,10 @@ export class PostgresAccountRepository implements IAccountRepository {
     if (updates.bankName !== undefined) {
       fields.push(`bank_name = $${paramCount++}`);
       values.push(updates.bankName);
+    }
+    if (updates.accountNumber !== undefined) {
+      fields.push(`account_number = $${paramCount++}`);
+      values.push(updates.accountNumber);
     }
     if (updates.status !== undefined) {
       fields.push(`status = $${paramCount++}`);
@@ -340,6 +352,22 @@ export class PostgresImportBatchRepository implements IImportBatchRepository {
     }
 
     return result.rows[0];
+  }
+
+  /**
+   * Get all unique months that have been uploaded
+   */
+  async getUploadedMonths(): Promise<Array<{ month: number; year: number }>> {
+    const result = await getPool().query<{ period_month: number; period_year: number }>(
+      `SELECT DISTINCT period_month, period_year FROM import_batch 
+       WHERE period_month IS NOT NULL AND period_year IS NOT NULL
+       ORDER BY period_year DESC, period_month DESC`
+    );
+
+    return result.rows.map((row) => ({
+      month: row.period_month,
+      year: row.period_year,
+    }));
   }
 }
 

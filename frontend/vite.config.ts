@@ -11,7 +11,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    port: 5173,
     host: true,
     strictPort: true,
   },
@@ -21,7 +21,7 @@ export default defineConfig({
     sourcemap: true,
   },
   preview: {
-    port: 3000,
+    port: 5173,
     host: true,
     strictPort: true,
   },

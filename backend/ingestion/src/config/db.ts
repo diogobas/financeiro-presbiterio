@@ -166,10 +166,21 @@ export async function runMigrations(): Promise<void> {
   const fs = await import('fs').then((m) => m.promises);
   const path = await import('path');
 
-  const migrationsDir = path.join(__dirname, 'migrations');
+  const migrationsDir = path.join(__dirname, '..', 'db', 'migrations');
+  console.log(`Migrations directory: ${migrationsDir}`);
+  console.log(`__dirname: ${__dirname}`);
+
   const pool = getPool();
 
   try {
+    // Check if migrations directory exists
+    try {
+      await fs.access(migrationsDir);
+    } catch {
+      console.log('⚠ Migrations directory not found, skipping migrations');
+      return;
+    }
+
     // Get all migration files
     const files = (await fs.readdir(migrationsDir)).filter((f) => f.endsWith('.sql')).sort();
 
