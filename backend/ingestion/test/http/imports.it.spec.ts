@@ -45,7 +45,7 @@ describe('POST /imports - CSV Upload Integration', () => {
         await pool.query('SELECT 1');
         ready = true;
         break;
-      } catch (err) {
+      } catch {
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
     }

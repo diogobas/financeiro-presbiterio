@@ -42,7 +42,7 @@ describe('GET /imports/{id} - Import Status and Statistics', () => {
         await pool.query('SELECT 1');
         ready = true;
         break;
-      } catch (err) {
+      } catch {
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
     }

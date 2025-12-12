@@ -18,6 +18,7 @@ import {
   CreateRuleInput,
   CreateClassificationOverrideInput,
   AccountStatus,
+  ClassificationSource,
 } from './types';
 
 /**

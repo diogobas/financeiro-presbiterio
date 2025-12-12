@@ -4,11 +4,11 @@
  */
 
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { ImportBatchRepository } from '../domain/importBatchRepository';
-import { TransactionRepository } from '../domain/transactionRepository';
+import { PostgresImportBatchRepository } from '../infrastructure/repositories';
+import { PostgresTransactionRepository } from '../infrastructure/repositories';
 
-const importBatchRepo = new ImportBatchRepository();
-const transactionRepo = new TransactionRepository();
+const importBatchRepo = new PostgresImportBatchRepository();
+const transactionRepo = new PostgresTransactionRepository();
 
 /**
  * GET /imports/{id} handler

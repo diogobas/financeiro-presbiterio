@@ -5,18 +5,14 @@
 
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { createHash } from 'crypto';
-import { Readable } from 'stream';
-import { AccountRepository } from '../domain/accountRepository';
-import { ImportBatchRepository } from '../domain/importBatchRepository';
-import { TransactionRepository } from '../domain/transactionRepository';
-import { ImportService } from './importService';
-import { CSVParser } from './csvParser';
+import { PostgresAccountRepository } from '../infrastructure/repositories';
+import { PostgresImportBatchRepository } from '../infrastructure/repositories';
+import { PostgresTransactionRepository } from '../infrastructure/repositories';
+import { parseCSVRow } from '../ingest/csvParser';
 
-const accountRepo = new AccountRepository();
-const importBatchRepo = new ImportBatchRepository();
-const transactionRepo = new TransactionRepository();
-const importService = new ImportService(importBatchRepo, transactionRepo);
-const csvParser = new CSVParser();
+const accountRepo = new PostgresAccountRepository();
+const importBatchRepo = new PostgresImportBatchRepository();
+const transactionRepo = new PostgresTransactionRepository();
 
 /**
  * Calculate SHA256 checksum of file content
@@ -138,7 +134,9 @@ export async function uploadImportsHandler(
       if (!line) continue;
 
       try {
-        const row = csvParser.parseCSVRow(line);
+        // Parse CSV line into columns
+        const columns = line.split(',').map((col) => col.trim());
+        const row = parseCSVRow(columns);
         transactions.push({
           accountId,
           batchId: batch.id,
