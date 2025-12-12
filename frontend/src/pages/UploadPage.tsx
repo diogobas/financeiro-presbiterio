@@ -1,69 +1,68 @@
 /**
- * T024: Upload Page - CSV file upload and account mapping
+ * T024: Upload Page - CSV file upload
  *
  * Features:
  * - File input with validation
- * - Account selection
- * - Period (month/year) selection
+ * - Auto-detect period (month/year) from CSV dates
  * - Upload progress indication
  * - Success/error handling
- * - Import preview with normalization summary
+ * - Import preview with file header display
  */
 
 import React, { useState } from 'react';
 import styles from './UploadPage.module.css';
 
-interface Account {
-  id: string;
-  name: string;
-  bankName?: string;
+interface ImportResult {
+  accountNumber: string;
+  accountId: string;
+  status: string;
+  batchId: string;
+  message: string;
 }
 
-interface ImportResponse {
-  id: string;
-  accountId: string;
-  uploadedBy: string;
-  uploadedAt: string;
-  fileChecksum: string;
-  periodMonth: number;
-  periodYear: number;
-  encoding: string;
-  rowCount: number;
-  status: string;
+interface MultiAccountResponse {
+  total: number;
+  results: ImportResult[];
+  message: string;
 }
 
 export function UploadPage() {
   // Form state
   const [file, setFile] = useState<File | null>(null);
-  const [accountId, setAccountId] = useState('');
-  const [periodMonth, setPeriodMonth] = useState<number>(new Date().getMonth() + 1);
-  const [periodYear, setPeriodYear] = useState<number>(new Date().getFullYear());
-  const [accounts, setAccounts] = useState<Account[]>([]);
 
   // UI state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<ImportResponse | null>(null);
+  const [success, setSuccess] = useState<MultiAccountResponse | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [uploadedMonths, setUploadedMonths] = useState<Array<{ month: number; year: number }>>([]);
 
-  // Load accounts on component mount
+  // Fetch uploaded months on component mount
   React.useEffect(() => {
-    loadAccounts();
-  }, []);
+    const fetchUploadedMonths = async () => {
+      try {
+        const apiUrl =
+          (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) ||
+          'http://localhost:3000';
+        const response = await fetch(`${apiUrl}/imports/months`);
+        if (response.ok) {
+          const data = await response.json();
+          // Sort in ascending order (oldest to newest)
+          const sorted = (data.months || []).sort(
+            (a: { month: number; year: number }, b: { month: number; year: number }) => {
+              if (a.year !== b.year) return a.year - b.year;
+              return a.month - b.month;
+            }
+          );
+          setUploadedMonths(sorted);
+        }
+      } catch (err) {
+        console.error('Failed to fetch uploaded months:', err);
+      }
+    };
 
-  async function loadAccounts() {
-    try {
-      // TODO: Replace with actual API call
-      const mockAccounts: Account[] = [
-        { id: '1', name: 'Personal Checking', bankName: 'Bank A' },
-        { id: '2', name: 'Savings Account', bankName: 'Bank B' },
-        { id: '3', name: 'Business Account', bankName: 'Bank C' },
-      ];
-      setAccounts(mockAccounts);
-    } catch (err) {
-      setError(`Failed to load accounts: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    }
-  }
+    fetchUploadedMonths();
+  }, [success]); // Refresh when upload succeeds
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selectedFile = e.target.files?.[0];
@@ -111,30 +110,12 @@ export function UploadPage() {
       return;
     }
 
-    if (!accountId) {
-      setError('Please select an account');
-      return;
-    }
-
-    if (periodMonth < 1 || periodMonth > 12) {
-      setError('Please select a valid month (1-12)');
-      return;
-    }
-
-    if (periodYear < 2000 || periodYear > 2100) {
-      setError('Please select a valid year (2000-2100)');
-      return;
-    }
-
     setLoading(true);
 
     try {
       // Create FormData
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('accountId', accountId);
-      formData.append('periodMonth', periodMonth.toString());
-      formData.append('periodYear', periodYear.toString());
 
       // TODO: Replace with actual API endpoint
       const apiUrl =
@@ -150,15 +131,12 @@ export function UploadPage() {
         throw new Error(errorData.message || `Upload failed with status ${response.status}`);
       }
 
-      const result: ImportResponse = await response.json();
+      const result: MultiAccountResponse = await response.json();
       setSuccess(result);
 
       // Reset form
       setFile(null);
       setFilePreview(null);
-      setAccountId('');
-      setPeriodMonth(new Date().getMonth() + 1);
-      setPeriodYear(new Date().getFullYear());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
     } finally {
@@ -168,80 +146,37 @@ export function UploadPage() {
 
   return (
     <div className={styles.container}>
-      <h1>Upload Bank CSV</h1>
-      <p className={styles.subtitle}>Import transactions and map to your account</p>
+      <h1>Enviar CSV Bancário</h1>
+      <p className={styles.subtitle}>Importe transações e mapeie para sua conta</p>
 
       {error && <div className={styles.error}>{error}</div>}
       {success && (
         <div className={styles.success}>
-          <h3>✓ Import Successful</h3>
-          <p>Batch ID: {success.id}</p>
-          <p>Transactions: {success.rowCount}</p>
-          <p>
-            Period: {success.periodMonth}/{success.periodYear}
-          </p>
-          <p>Encoding: {success.encoding}</p>
+          <h3>✓ Importação Bem-sucedida</h3>
+          <p className={styles.successMessage}>{success.message}</p>
+          <div className={styles.resultsList}>
+            {success.results.map((result, index) => (
+              <div
+                key={index}
+                className={`${styles.resultItem} ${styles[result.status.toLowerCase()]}`}
+              >
+                <div className={styles.resultHeader}>
+                  <strong>{result.accountNumber}</strong>
+                  <span className={styles.statusBadge}>{result.status}</span>
+                </div>
+                <p className={styles.resultMessage}>{result.message}</p>
+                {result.status === 'SUCCESS' && (
+                  <p className={styles.batchId}>Batch ID: {result.batchId}</p>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.formGroup}>
-          <label htmlFor="account">Account *</label>
-          <select
-            id="account"
-            value={accountId}
-            onChange={(e) => setAccountId(e.target.value)}
-            disabled={loading}
-            required
-          >
-            <option value="">Select an account...</option>
-            {accounts.map((acc) => (
-              <option key={acc.id} value={acc.id}>
-                {acc.name}
-                {acc.bankName ? ` (${acc.bankName})` : ''}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className={styles.formRow}>
-          <div className={styles.formGroup}>
-            <label htmlFor="month">Month *</label>
-            <select
-              id="month"
-              value={periodMonth}
-              onChange={(e) => setPeriodMonth(parseInt(e.target.value))}
-              disabled={loading}
-              required
-            >
-              {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                <option key={m} value={m}>
-                  {m.toString().padStart(2, '0')}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className={styles.formGroup}>
-            <label htmlFor="year">Year *</label>
-            <select
-              id="year"
-              value={periodYear}
-              onChange={(e) => setPeriodYear(parseInt(e.target.value))}
-              disabled={loading}
-              required
-            >
-              {Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i).map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className={styles.formGroup}>
-          <label htmlFor="file">CSV File *</label>
+          <label htmlFor="file">Arquivo CSV *</label>
           <input
             id="file"
             type="file"
@@ -250,24 +185,33 @@ export function UploadPage() {
             disabled={loading}
             required
           />
-          {file && <p className={styles.fileName}>Selected: {file.name}</p>}
+          {file && <p className={styles.fileName}>Selecionado: {file.name}</p>}
         </div>
 
         {filePreview && (
           <div className={styles.preview}>
-            <label>File Preview (first 6 lines):</label>
+            <label>Visualização do Arquivo (primeiras 6 linhas):</label>
             <pre>{filePreview}</pre>
           </div>
         )}
 
-        <button
-          type="submit"
-          disabled={loading || !file || !accountId}
-          className={styles.submitBtn}
-        >
-          {loading ? 'Uploading...' : 'Upload CSV'}
+        <button type="submit" disabled={loading || !file} className={styles.submitBtn}>
+          {loading ? 'Enviando...' : 'Enviar CSV'}
         </button>
       </form>
+
+      {uploadedMonths.length > 0 && (
+        <div className={styles.uploadedMonths}>
+          <h3>Já Enviados</h3>
+          <div className={styles.monthsList}>
+            {uploadedMonths.map((item, index) => (
+              <span key={index} className={styles.monthTag}>
+                {item.month.toString().padStart(2, '0')}/{item.year}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

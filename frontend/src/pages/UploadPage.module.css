@@ -165,7 +165,120 @@
   margin-bottom: 0.75rem;
 }
 
-.success p {
+.successMessage {
+  margin: 0.5rem 0 1rem 0;
+  font-weight: 500;
+}
+
+.resultsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.resultItem {
+  background: white;
+  border: 1px solid #cfc;
+  border-radius: 4px;
+  padding: 1rem;
+  border-left: 4px solid #363;
+}
+
+.resultItem.success {
+  border-color: #cfc;
+  border-left-color: #363;
+  background-color: #fafff9;
+}
+
+.resultItem.duplicate {
+  border-color: #ffc;
+  border-left-color: #c90;
+  background-color: #fffaf5;
+}
+
+.resultItem.error {
+  border-color: #fcc;
+  border-left-color: #c33;
+  background-color: #fffaf9;
+}
+
+.resultHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.resultHeader strong {
+  font-size: 1.05rem;
+  color: #333;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 3px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.resultItem.success .statusBadge {
+  background-color: #d4f4d4;
+  color: #2d6b2d;
+}
+
+.resultItem.duplicate .statusBadge {
+  background-color: #ffe8a8;
+  color: #8b6914;
+}
+
+.resultItem.error .statusBadge {
+  background-color: #f8d7da;
+  color: #842029;
+}
+
+.resultMessage {
   margin: 0.5rem 0;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.batchId {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.85rem;
+  color: #888;
+  font-family: 'Courier New', monospace;
+}
+.uploadedMonths {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.uploadedMonths h3 {
+  margin: 0 0 1rem 0;
+  color: #333;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.monthsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.monthTag {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background: white;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: #333;
+  font-weight: 500;
 }
