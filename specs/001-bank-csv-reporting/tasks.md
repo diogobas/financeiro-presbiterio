@@ -183,7 +183,16 @@ description: "Task list template for feature implementation"
 
 ### Implementation for User Story 2
 
-- [ ] T028 [US2] Implement Rule entity/versioning and repository at backend/ingestion/src/domain/rule.ts
+- [x] T028 [US2] Implement Rule entity/versioning and repository at backend/ingestion/src/domain/types.ts
+  - ✅ Rule domain type with complete fields (name, description, category, tipo, pattern, matchType, version, priority, enabled, timestamps, createdBy)
+  - ✅ CreateRuleInput and UpdateRuleInput types for input validation
+  - ✅ IRuleRepository interface with 13 methods covering CRUD, filtering, pagination, versioning
+  - ✅ PostgresRuleRepository implementation with proper field mapping
+  - ✅ Automatic version incrementing on updates
+  - ✅ 60+ integration tests for repository operations (postgres-rule.spec.ts)
+  - ✅ DB schema migration (003_update_rule_schema.sql): renamed matcher_type to match_type, added name/description/category/priority/enabled/updated_at
+  - ✅ Unique constraint on rule name, proper indexes for queries
+  - ✅ Build: 0 errors ✅
 - [ ] T029 [US2] Implement matcher library (contains/regex, accent-folded) at backend/ingestion/src/classify/matcher.ts
 - [ ] T030 [US2] Integrate classification into import pipeline at backend/ingestion/src/classify/classificationService.ts
 - [ ] T031 [US2] Implement GET/POST /rules per OpenAPI at backend/ingestion/src/http/rulesRoute.ts
