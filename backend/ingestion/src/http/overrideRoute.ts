@@ -1,8 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import {
-  PostgresTransactionRepository,
-  PostgresClassificationOverrideRepository,
-} from '../infrastructure/repositories';
+import { PostgresTransactionRepository } from '../infrastructure/repositories';
 import { CreateClassificationOverrideInput } from '../domain/types';
 
 export async function registerOverrideRoutes(server: FastifyInstance): Promise<void> {
