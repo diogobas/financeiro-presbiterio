@@ -223,19 +223,19 @@ export function extractAccountSections(fileContent: string): AccountSection[] {
   }
 
   let nonEmptyLineCount = 0;
-  let linesSinceLastAccount = 0;
+  let _linesSinceLastAccount = 0;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
 
     // Skip empty lines
     if (!line) {
-      linesSinceLastAccount++;
+      _linesSinceLastAccount++;
       continue;
     }
 
     nonEmptyLineCount++;
-    linesSinceLastAccount++;
+    _linesSinceLastAccount++;
 
     // Log lines that contain "Conta" for debugging
     if (line.includes('Conta')) {

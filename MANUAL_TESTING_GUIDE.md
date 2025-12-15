@@ -70,8 +70,6 @@ This will:
 
 ### Option B: Manual Setup
 
-#### Step 1: Start PostgreSQL
-
 ```bash
 cd /Users/diogobastos/workspace/personal/financeiro-presbiterio
 docker-compose up -d postgres
@@ -82,17 +80,6 @@ sleep 10
 # Verify it's running
 docker-compose ps
 ```
-
-#### Step 2: Run Database Migrations
-
-```bash
-cd backend/ingestion
-npm run migrate
-```
-
-If this fails, you can also run migrations manually through the app on startup (automatic).
-
----
 
 ## Part 2: Start Backend Services
 

@@ -25,11 +25,11 @@ interface DatabaseConfig {
  */
 export function getDatabaseConfig(): DatabaseConfig {
   return {
-    host: process.env.DATABASE_HOST || 'localhost',
+    host: process.env.DATABASE_HOST || 'postgres',
     port: parseInt(process.env.DATABASE_PORT || '5432'),
     database: process.env.DATABASE_NAME || 'financeiro',
-    user: process.env.DATABASE_USER || 'postgres',
-    password: process.env.DATABASE_PASSWORD || 'postgres',
+    user: process.env.DATABASE_USER || 'app',
+    password: process.env.DATABASE_PASSWORD || 'app',
     maxConnections: parseInt(process.env.DATABASE_MAX_CONNECTIONS || '20'),
     idleTimeout: parseInt(process.env.DATABASE_IDLE_TIMEOUT || '30000'),
     connectionTimeout: parseInt(process.env.DATABASE_CONNECTION_TIMEOUT || '10000'),
@@ -191,6 +191,7 @@ export async function runMigrations(): Promise<void> {
       const sql = await fs.readFile(filePath, 'utf-8');
 
       console.log(`Executing migration: ${file}`);
+      // Execute the entire file as-is; PostgreSQL can handle multiple statements
       await pool.query(sql);
       console.log(`✓ Migration complete: ${file}`);
     }

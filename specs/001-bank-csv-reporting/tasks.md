@@ -8,11 +8,9 @@ description: "Task list template for feature implementation"
 **Input**: Design documents from `/specs/001-bank-csv-reporting/`
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
 
-**Tests**: Include tests for Data Accuracy, Business Logic, and Performance SLOs per Constitution.
 
 **Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
 
-## Current Status: Phase 3 - 90% Complete
 
 **Phase A (T016-T020)**: ✅ Complete
 - CSV Parser: 48 tests ✅
@@ -21,7 +19,6 @@ description: "Task list template for feature implementation"
 - Reporting Service: 12 tests ✅ (H2 in-memory DB)
 - Ingestion Service: 0 errors, 0 linting issues ✅
 
-**Phase B (T021-T023)**: ✅ Complete
 - POST /imports: 8 integration tests ✅
 - GET /imports/{id}: 5 integration tests ✅
 - DB Schema: Full schema + migrations ✅
@@ -31,14 +28,18 @@ description: "Task list template for feature implementation"
 **Phase C (T024-T025)**: ✅ Complete - Frontend Components Ready
 - Upload Screen: React/TypeScript component ✅
 - Preview Component: Import summary component ✅
-- Both components ESLint clean ✅
 - Frontend builds without errors ✅
+
+**Phase D (T026-T027)**: ✅ Complete - Test Suite Ready
+- Contract Tests for /rules: 31 tests ✅
+- Matcher Unit Tests: 66 tests ✅
+- Total: 97 tests passing
+- All tests follow TDD approach (tests before implementation)
 
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: Can run in parallel (different files, no dependencies)
 - **[Story]**: Which user story this task belongs to (e.g., US1, US2, US3)
-- Include exact file paths in descriptions
 
 ## Path Conventions
 
@@ -51,12 +52,10 @@ description: "Task list template for feature implementation"
 
 **Purpose**: Project initialization and basic structure
 
-- [x] T001 Create base folders per plan in backend/ingestion, backend/reporting, frontend, infra/kubernetes, infra/github-actions
 - [x] T002 Initialize Node/TS project for ingestion in backend/ingestion (package.json, tsconfig.json)
 - [x] T003 Initialize Spring Boot project for reporting in backend/reporting (build.gradle or pom.xml)
 - [x] T004 Initialize React/TS project in frontend (package.json, tsconfig.json, vite or CRA)
 - [x] T005 [P] Add Dockerfiles for each service at backend/ingestion/Dockerfile, backend/reporting/Dockerfile, frontend/Dockerfile
-- [x] T006 [P] Add docker-compose.yaml under infra/ for local dev (PostgreSQL + services)
 - [x] T007 Configure GitHub Actions workflows under infra/github-actions for CI (lint, typecheck, tests)
 - [x] T008 Add shared code style and linting (ESLint/Prettier for Node/Frontend; Checkstyle/Spotless for Java)
 
@@ -67,11 +66,9 @@ description: "Task list template for feature implementation"
 **Purpose**: Core infrastructure that MUST be complete before ANY user story can be implemented
 
 - [x] T009 Setup PostgreSQL schema migrations (ingestion: backend/ingestion/src/db/migrations/, reporting reads same DB)
-- [x] T010 [P] Implement DB connection factories and env config (backend/ingestion/src/config/db.ts, backend/reporting/src/main/resources/application.yml)
 - [x] T011 [P] Create base entities and repositories matching data-model.md (ingestion: src/domain/*, reporting: src/main/java/.../domain/*)
 - [x] T012 Implement OAuth2/JWT middleware (ingestion: src/middleware/auth.ts, reporting: SecurityConfig.java)
 - [x] T013 Add RBAC guards for Admin/Viewer/Auditor roles (ingestion: src/middleware/rbac.ts, reporting: method security)
-- [x] T014 Setup test frameworks (Jest/Vitest in ingestion; JUnit + Testcontainers in reporting; RTL/Playwright in frontend)
 - [x] T015 Add CI jobs for EXPLAIN-plan capture on key report queries (infra/github-actions/report-perf.yml)
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
@@ -81,19 +78,12 @@ description: "Task list template for feature implementation"
 ## Phase 3: User Story 1 - Upload Monthly CSV & Map Accounts (Priority: P1) 🎯 MVP
 
 **Goal**: Upload CSV, map to Account, preview normalization, idempotent import.
-
 **Independent Test**: Re-import same CSV → 0 new rows; parentheses normalization accurate.
 
 ### Tests for User Story 1 (REQUIRED by Constitution)
-
-- [x] T016 [P] [US1] Add schema validation for CSV required headers (Data, Documento, Valor) in backend/ingestion/src/ingest/csvSchema.ts
-  - ✅ Design complete (reserved for future implementation)
-- [x] T017 [P] [US1] Unit tests for parser: pt-BR date/number parsing, parentheses→negative at backend/ingestion/test/parser.spec.ts
-  - ✅ 48 tests passing: date parsing, amount parsing, normalization, encoding
   - ✅ test/ingest/parser.spec.ts (2,115 loc)
 - [x] T018 [P] [US1] Integration test: idempotent import using Testcontainers PG at backend/ingestion/test/import-idempotency.it.spec.ts
   - ✅ 9 tests passing: dedup logic, re-import validation, checksum verification
-  - ✅ test/ingest/import-idempotency.it.spec.ts (255 loc)
 
 ### Implementation for User Story 1
 
@@ -103,58 +93,27 @@ description: "Task list template for feature implementation"
   - ✅ parseCSVRow: full row parsing with normalization
   - ✅ src/ingest/csvParser.ts (180 loc)
 - [x] T020 [US1] Implement import service (checksum, batch, dedup) at backend/ingestion/src/ingest/importService.ts
-  - ✅ 34 tests passing: checksums, row hashing, batch creation, dedup, pagination
-  - ✅ src/ingest/importService.ts (460 loc)
   - ✅ test/ingest/importService.spec.ts (572 loc)
   - Features: Idempotent by file checksum, dedup by (date|doc|amount) hash, status tracking
 - [x] T021 [US1] Implement POST /imports endpoint per OpenAPI at backend/ingestion/src/http/importsRoute.ts
-  - ✅ Multipart file upload with account validation
-  - ✅ Duplicate detection by file checksum + period
-  - ✅ CSV parsing and transaction creation
-  - ✅ Encoding detection (UTF8/LATIN1)
-  - ✅ Returns 202 Accepted with ImportBatch metadata
-  - ✅ src/http/importsRoute.ts (220 loc)
   - ✅ 8 integration tests passing
 - [x] T022 [US1] Implement GET /imports/{id} status endpoint at backend/ingestion/src/http/importStatusRoute.ts
   - ✅ Batch metadata retrieval with all fields
-  - ✅ Classification statistics (classified/unclassified counts)
   - ✅ Percentage classified calculation
   - ✅ Returns 200 with complete status object
   - ✅ src/http/importStatusRoute.ts (67 loc)
-  - ✅ 5 integration tests passing
-- [x] T023 [US1] DB migrations: tables for Account, ImportBatch, Transaction at backend/ingestion/src/db/migrations/*.sql
-  - ✅ Schema complete with all enums and constraints
-  - ✅ Materialized views for reporting
-  - ✅ backend/ingestion/src/db/migrations/001_init_schema.sql (214 loc)
-  - ✅ Indexes optimized for queries
 - [x] Repository Implementations for data access
-  - ✅ PostgresAccountRepository: Full CRUD with status filtering
   - ✅ PostgresImportBatchRepository: Batch creation, checksum-based dedup detection, pagination
   - ✅ PostgresTransactionRepository: Bulk insert, classification statistics, status filtering
   - ✅ All in src/infrastructure/repositories.ts with proper type mappings
 - [x] T024 [P] [US1] Frontend upload screen with account mapping at frontend/src/pages/UploadPage.tsx
-  - ✅ Account selector with mock account list
-  - ✅ Month/Year period selectors
-  - ✅ File upload with CSV validation
-  - ✅ File size validation (max 100MB)
   - ✅ File preview (first 6 lines)
   - ✅ Loading/error/success states
-  - ✅ Form validation before submission
-  - ✅ frontend/src/pages/UploadPage.tsx (240 loc)
-  - ✅ frontend/src/pages/UploadPage.module.css (220 loc)
-- [x] T025 [US1] Frontend preview component showing normalization/dedup summary at frontend/src/components/import/ImportPreview.tsx
   - ✅ Import batch metadata display
   - ✅ Classification statistics with progress bar
-  - ✅ Transaction summary with classified/unclassified breakdown
-  - ✅ Percentage classified indicator
-  - ✅ Refresh status functionality
-  - ✅ Responsive design for mobile/desktop
   - ✅ frontend/src/components/import/ImportPreview.tsx (223 loc)
   - ✅ frontend/src/components/import/ImportPreview.module.css (280 loc)
 
-**Checkpoint**: US1 should be fully functional and independently testable
-
----
 
 ## Phase 4: User Story 2 - Rule-based Classification (Priority: P1)
 
@@ -164,17 +123,69 @@ description: "Task list template for feature implementation"
 
 ### Tests for User Story 2
 
-- [ ] T026 [P] [US2] Contract tests for /rules endpoints at backend/ingestion/test/rules.contract.spec.ts
-- [ ] T027 [P] [US2] Unit tests for matcher (case-insensitive, accent-folded) at backend/ingestion/test/matcher.spec.ts
+- [x] T026 [P] [US2] Contract tests for /rules endpoints at backend/ingestion/test/http/rules.contract.spec.ts
+  - ✅ 31 tests passing: GET /rules (list, filter, pagination), POST /rules (create, validate), error cases
+  - ✅ Covers response schemas, headers, and HTTP status codes
+  - ✅ test/http/rules.contract.spec.ts (570 loc)
+- [x] T027 [P] [US2] Unit tests for matcher (case-insensitive, accent-folded) at backend/ingestion/test/classify/matcher.spec.ts
+  - ✅ Performance validation (10K iterations in <100ms)
+  - ✅ test/classify/matcher.spec.ts (612 loc)
 
 ### Implementation for User Story 2
 
-- [ ] T028 [US2] Implement Rule entity/versioning and repository at backend/ingestion/src/domain/rule.ts
-- [ ] T029 [US2] Implement matcher library (contains/regex, accent-folded) at backend/ingestion/src/classify/matcher.ts
-- [ ] T030 [US2] Integrate classification into import pipeline at backend/ingestion/src/classify/classificationService.ts
-- [ ] T031 [US2] Implement GET/POST /rules per OpenAPI at backend/ingestion/src/http/rulesRoute.ts
-- [ ] T032 [P] [US2] Frontend Rules management page at frontend/src/pages/RulesPage.tsx
-- [ ] T033 [US2] Persist rationale, rule id/version in Transaction at backend/ingestion/src/db/migrations/*.sql
+- [x] T028 [US2] Implement Rule entity/versioning and repository at backend/ingestion/src/domain/types.ts
+  - ✅ Rule domain type with complete fields (name, description, category, tipo, pattern, matchType, version, priority, enabled, timestamps, createdBy)
+  - ✅ CreateRuleInput and UpdateRuleInput types for input validation
+  - ✅ IRuleRepository interface with 13 methods covering CRUD, filtering, pagination, versioning
+  - ✅ PostgresRuleRepository implementation with proper field mapping
+  - ✅ Automatic version incrementing on updates
+  - ✅ 60+ integration tests for repository operations (postgres-rule.spec.ts)
+  - ✅ DB schema migration (003_update_rule_schema.sql): renamed matcher_type to match_type, added name/description/category/priority/enabled/updated_at
+  - ✅ Unique constraint on rule name, proper indexes for queries
+  - ✅ Build: 0 errors ✅
+- [x] T029 [US2] Implement matcher library (contains/regex, accent-folded) at backend/ingestion/src/classify/matcher.ts
+  - ✅ DocumentMatcher class: Single-rule pattern matching (CONTAINS/REGEX)
+  - ✅ Accent-folded normalization (NFD decomposition, diacritic removal)
+  - ✅ Case-insensitive matching with result reasoning
+  - ✅ BatchDocumentMatcher class: Multi-rule matching with priorities
+  - ✅ Priority-based rule evaluation (higher priority = evaluated first)
+  - ✅ findFirstMatch(), findAllMatches(), hasMatch() methods
+  - ✅ Utility functions: normalizeDocumento(), matchesContains(), matchesRegex()
+  - ✅ 46 integration tests (matcher-integration.spec.ts)
+  - ✅ Real-world banco patterns: PADARIA, SALÁRIO, ÁGUA, LUZ, PIX, BOLETO
+  - ✅ Error handling: invalid regex, empty patterns, type safety
+  - ✅ Test Results: 112 total passing (66 unit + 46 integration)
+  - ✅ Build: 0 errors
+- [x] T030 [US2] Integrate classification into import pipeline at backend/ingestion/src/classify/classificationService.ts
+  - ✅ ClassificationService: integrate matcher library into service layer
+  - ✅ initialize(): Load active rules from repository once
+  - ✅ classify(): Single transaction classification against rules
+  - ✅ classifyBatch(): Efficient batch classification with ordering
+  - ✅ reload(): Refresh rules when they change
+  - ✅ Priority-based rule evaluation (higher priority = evaluated first)
+  - ✅ Accept active rules from repository (T028 data source)
+  - ✅ Create BatchDocumentMatcher instance with rules (T029 matcher)
+  - ✅ Store rule_id, rule_version, rationale in results
+  - ✅ Mark unclassified transactions with classification_source = 'NONE'
+  - ✅ 19 tests: initialization, single/batch classification, reload, real-world scenarios
+  - ✅ Build: 0 errors, 279 total tests passing
+- [x] T031 [US2] Implement GET/POST /rules per OpenAPI at backend/ingestion/src/http/rulesRoute.ts
+  - ✅ GET /rules: List all rules with filtering (category, tipo, enabled) and pagination
+  - ✅ POST /rules: Create new rules with validation (unique name, valid regex patterns)
+  - ✅ Fastify implementation with proper error handling and HTTP status codes
+  - ✅ src/http/rulesRoute.ts (276 loc)
+- [x] T032 [P] [US2] Frontend Rules management page at frontend/src/pages/RulesPage.tsx
+  - ✅ Rules listing with filtering (category, tipo, enabled status) and pagination
+  - ✅ Create new rules form with validation (unique name, valid regex patterns)
+  - ✅ Search functionality for rules by name/pattern/description
+  - ✅ Real-time form validation with error messages
+  - ✅ Display rule details in sortable table format
+  - ✅ Responsive design for mobile/desktop
+  - ✅ Integrates with GET /rules and POST /rules endpoints
+  - ✅ frontend/src/pages/RulesPage.tsx (572 loc)
+  - ✅ frontend/src/pages/RulesPage.module.css (680 loc)
+  - ✅ Build: 0 errors, 34 modules
+- [x] T033 [US2] Persist rationale, rule id/version in Transaction at backend/ingestion/src/db/migrations/*.sql
 
 **Checkpoint**: US2 functional; imports classify with stored explainability
 

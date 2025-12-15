@@ -24,7 +24,11 @@ services:
       dockerfile: Dockerfile
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgres://app:app@postgres:5432/financeiro
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: financeiro
+      DATABASE_USER: app
+      DATABASE_PASSWORD: app
       PORT: 8080
       ENABLE_MIGRATIONS_ON_STARTUP: "true"
     depends_on:

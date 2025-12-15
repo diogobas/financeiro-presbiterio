@@ -26,6 +26,7 @@ import {
   CreateImportBatchInput,
   CreateTransactionInput,
   CreateRuleInput,
+  UpdateRuleInput,
   CreateClassificationOverrideInput,
   AccountStatus,
 } from '../domain/types';
@@ -726,75 +727,268 @@ export class PostgresTransactionRepository implements ITransactionRepository {
  */
 export class PostgresRuleRepository implements IRuleRepository {
   async findById(id: string): Promise<Rule | null> {
-    const result = await getPool().query<Rule>('SELECT * FROM rule WHERE id = $1', [id]);
-    return result.rows[0] || null;
+    const result = await getPool().query<any>(
+      `SELECT 
+        id, name, description, category, tipo, pattern, match_type as "matchType",
+        version, priority, enabled, created_at as "createdAt", updated_at as "updatedAt",
+        created_by as "createdBy"
+      FROM rule WHERE id = $1`,
+      [id]
+    );
+    return result.rows[0] ? this.mapRowToRule(result.rows[0]) : null;
+  }
+
+  async findAll(options?: {
+    category?: string;
+    tipo?: 'RECEITA' | 'DESPESA';
+    enabled?: boolean;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ rules: Rule[]; total: number }> {
+    let query = `SELECT 
+      id, name, description, category, tipo, pattern, match_type as "matchType",
+      version, priority, enabled, created_at as "createdAt", updated_at as "updatedAt",
+      created_by as "createdBy"
+    FROM rule WHERE 1=1`;
+    const params: any[] = [];
+    let paramIndex = 1;
+
+    if (options?.category) {
+      query += ` AND category = $${paramIndex}`;
+      params.push(options.category);
+      paramIndex++;
+    }
+
+    if (options?.tipo) {
+      query += ` AND tipo = $${paramIndex}`;
+      params.push(options.tipo);
+      paramIndex++;
+    }
+
+    if (options?.enabled !== undefined) {
+      query += ` AND enabled = $${paramIndex}`;
+      params.push(options.enabled);
+      paramIndex++;
+    }
+
+    // Get total count
+    const countQuery = query.replace(
+      'SELECT id, name, description, category, tipo, pattern, match_type as "matchType", version, priority, enabled, created_at as "createdAt", updated_at as "updatedAt", created_by as "createdBy" FROM rule',
+      'SELECT COUNT(*) as count FROM rule'
+    );
+    const countResult = await getPool().query<{ count: string | number }>(countQuery, params);
+    const total = countResult.rows[0] ? parseInt(String(countResult.rows[0].count), 10) : 0;
+
+    // Apply pagination
+    query += ` ORDER BY priority DESC, updated_at DESC`;
+    if (options?.limit) {
+      query += ` LIMIT $${paramIndex}`;
+      params.push(options.limit);
+      paramIndex++;
+    }
+    if (options?.offset) {
+      query += ` OFFSET $${paramIndex}`;
+      params.push(options.offset);
+    }
+
+    const result = await getPool().query<any>(query, params);
+    return {
+      rules: result.rows.map((row: any) => this.mapRowToRule(row)),
+      total,
+    };
   }
 
   async findActive(): Promise<Rule[]> {
-    const result = await getPool().query<Rule>(
-      'SELECT * FROM rule WHERE active = true ORDER BY created_at DESC'
+    const result = await getPool().query<any>(
+      `SELECT 
+        id, name, description, category, tipo, pattern, match_type as "matchType",
+        version, priority, enabled, created_at as "createdAt", updated_at as "updatedAt",
+        created_by as "createdBy"
+      FROM rule WHERE enabled = true ORDER BY priority DESC, updated_at DESC`
     );
-    return result.rows;
+    return result.rows.map((row: any) => this.mapRowToRule(row));
   }
 
-  async findByCategory(categoryId: string): Promise<Rule[]> {
-    const result = await getPool().query<Rule>(
-      'SELECT * FROM rule WHERE category_id = $1 ORDER BY version DESC',
-      [categoryId]
+  async findByCategory(category: string): Promise<Rule[]> {
+    const result = await getPool().query<any>(
+      `SELECT 
+        id, name, description, category, tipo, pattern, match_type as "matchType",
+        version, priority, enabled, created_at as "createdAt", updated_at as "updatedAt",
+        created_by as "createdBy"
+      FROM rule WHERE category = $1 ORDER BY version DESC`,
+      [category]
     );
-    return result.rows;
+    return result.rows.map((row: any) => this.mapRowToRule(row));
   }
 
   async findByType(tipo: 'RECEITA' | 'DESPESA'): Promise<Rule[]> {
-    const result = await getPool().query<Rule>(
-      'SELECT * FROM rule WHERE tipo = $1 ORDER BY created_at DESC',
+    const result = await getPool().query<any>(
+      `SELECT 
+        id, name, description, category, tipo, pattern, match_type as "matchType",
+        version, priority, enabled, created_at as "createdAt", updated_at as "updatedAt",
+        created_by as "createdBy"
+      FROM rule WHERE tipo = $1 ORDER BY created_at DESC`,
       [tipo]
     );
-    return result.rows;
+    return result.rows.map((row: any) => this.mapRowToRule(row));
+  }
+
+  async findByName(name: string): Promise<Rule | null> {
+    const result = await getPool().query<any>(
+      `SELECT 
+        id, name, description, category, tipo, pattern, match_type as "matchType",
+        version, priority, enabled, created_at as "createdAt", updated_at as "updatedAt",
+        created_by as "createdBy"
+      FROM rule WHERE name = $1`,
+      [name]
+    );
+    return result.rows[0] ? this.mapRowToRule(result.rows[0]) : null;
   }
 
   async create(input: CreateRuleInput): Promise<Rule> {
-    const result = await getPool().query<Rule>(
-      `INSERT INTO rule (matcher_type, pattern, category_id, tipo, created_by, active)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING *`,
+    const result = await getPool().query<any>(
+      `INSERT INTO rule (name, description, category, tipo, pattern, match_type, priority, enabled, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING 
+        id, name, description, category, tipo, pattern, match_type as "matchType",
+        version, priority, enabled, created_at as "createdAt", updated_at as "updatedAt",
+        created_by as "createdBy"`,
       [
-        input.matcherType,
-        input.pattern,
-        input.categoryId,
+        input.name,
+        input.description,
+        input.category,
         input.tipo,
+        input.pattern,
+        input.matchType,
+        input.priority ?? 0,
+        input.enabled ?? true,
         input.createdBy,
-        input.active ?? true,
       ]
     );
-    return result.rows[0];
+    return this.mapRowToRule(result.rows[0]);
   }
 
-  async update(id: string, updates: Partial<Omit<CreateRuleInput, 'createdBy'>>): Promise<Rule> {
-    const result = await getPool().query<Rule>(
+  async update(id: string, updates: UpdateRuleInput): Promise<Rule> {
+    const setClauses: string[] = [];
+    const params: any[] = [];
+    let paramIndex = 1;
+
+    if (updates.name !== undefined) {
+      setClauses.push(`name = $${paramIndex}`);
+      params.push(updates.name);
+      paramIndex++;
+    }
+    if (updates.description !== undefined) {
+      setClauses.push(`description = $${paramIndex}`);
+      params.push(updates.description);
+      paramIndex++;
+    }
+    if (updates.category !== undefined) {
+      setClauses.push(`category = $${paramIndex}`);
+      params.push(updates.category);
+      paramIndex++;
+    }
+    if (updates.tipo !== undefined) {
+      setClauses.push(`tipo = $${paramIndex}`);
+      params.push(updates.tipo);
+      paramIndex++;
+    }
+    if (updates.pattern !== undefined) {
+      setClauses.push(`pattern = $${paramIndex}`);
+      params.push(updates.pattern);
+      paramIndex++;
+    }
+    if (updates.matchType !== undefined) {
+      setClauses.push(`match_type = $${paramIndex}`);
+      params.push(updates.matchType);
+      paramIndex++;
+    }
+    if (updates.priority !== undefined) {
+      setClauses.push(`priority = $${paramIndex}`);
+      params.push(updates.priority);
+      paramIndex++;
+    }
+    if (updates.enabled !== undefined) {
+      setClauses.push(`enabled = $${paramIndex}`);
+      params.push(updates.enabled);
+      paramIndex++;
+    }
+
+    // Always increment version and update updated_at
+    setClauses.push(`version = version + 1`);
+    setClauses.push(`updated_at = CURRENT_TIMESTAMP`);
+
+    params.push(id);
+
+    const query = `UPDATE rule
+      SET ${setClauses.join(', ')}
+      WHERE id = $${paramIndex}
+      RETURNING 
+        id, name, description, category, tipo, pattern, match_type as "matchType",
+        version, priority, enabled, created_at as "createdAt", updated_at as "updatedAt",
+        created_by as "createdBy"`;
+
+    const result = await getPool().query<any>(query, params);
+    return this.mapRowToRule(result.rows[0]);
+  }
+
+  async setEnabled(id: string, enabled: boolean): Promise<Rule> {
+    const result = await getPool().query<any>(
       `UPDATE rule
-       SET version = version + 1,
-           matcher_type = COALESCE($1, matcher_type),
-           pattern = COALESCE($2, pattern),
-           category_id = COALESCE($3, category_id),
-           tipo = COALESCE($4, tipo),
-           active = COALESCE($5, active)
-       WHERE id = $6
-       RETURNING *`,
-      [updates.matcherType, updates.pattern, updates.categoryId, updates.tipo, updates.active, id]
+       SET enabled = $1, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $2
+       RETURNING 
+        id, name, description, category, tipo, pattern, match_type as "matchType",
+        version, priority, enabled, created_at as "createdAt", updated_at as "updatedAt",
+        created_by as "createdBy"`,
+      [enabled, id]
     );
-    return result.rows[0];
+    return this.mapRowToRule(result.rows[0]);
   }
 
   async deactivate(id: string): Promise<void> {
-    await getPool().query('UPDATE rule SET active = false WHERE id = $1', [id]);
+    await getPool().query(
+      'UPDATE rule SET enabled = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1',
+      [id]
+    );
   }
 
   async countActive(): Promise<number> {
-    const result = await getPool().query<{ count: number }>(
-      'SELECT COUNT(*) as count FROM rule WHERE active = true'
+    const result = await getPool().query<{ count: string }>(
+      'SELECT COUNT(*) as count FROM rule WHERE enabled = true'
     );
-    return parseInt(result.rows[0].count as any);
+    return parseInt(result.rows[0].count, 10);
+  }
+
+  async count(): Promise<number> {
+    const result = await getPool().query<{ count: string }>('SELECT COUNT(*) as count FROM rule');
+    return parseInt(result.rows[0].count, 10);
+  }
+
+  async existsByName(name: string): Promise<boolean> {
+    const result = await getPool().query<{ exists: boolean }>(
+      'SELECT EXISTS(SELECT 1 FROM rule WHERE name = $1) as exists',
+      [name]
+    );
+    return result.rows[0].exists;
+  }
+
+  private mapRowToRule(row: any): Rule {
+    return {
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      category: row.category,
+      tipo: row.tipo,
+      pattern: row.pattern,
+      matchType: row.matchType,
+      version: row.version,
+      priority: row.priority,
+      enabled: row.enabled,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      createdBy: row.createdBy,
+    };
   }
 }
 

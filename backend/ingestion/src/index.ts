@@ -5,6 +5,8 @@ import dotenv from 'dotenv';
 import { initializePool, closePool, runMigrations } from './config/db';
 import importsRoute from './http/importsRoute';
 import importStatusRoute, { getUploadedMonthsHandler } from './http/importStatusRoute';
+import { createRulesRoute } from './http/rulesRoute';
+import { PostgresRuleRepository } from './infrastructure/repositories';
 
 // Load environment variables
 dotenv.config();
@@ -81,6 +83,10 @@ const start = async () => {
       console.log('Running database migrations...');
       await runMigrations();
     }
+
+    // Register rules route
+    const ruleRepository = new PostgresRuleRepository();
+    await createRulesRoute(server, ruleRepository);
 
     const port = Number(process.env.PORT) || 3000;
     await server.listen({ port, host: '0.0.0.0' });

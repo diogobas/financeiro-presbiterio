@@ -120,7 +120,14 @@ CREATE INDEX IF NOT EXISTS idx_rule_created_at ON rule(created_at);
 COMMENT ON TABLE rule IS 'Rules for automatic transaction classification';
 COMMENT ON COLUMN rule.id IS 'Unique rule identifier';
 COMMENT ON COLUMN rule.version IS 'Version number for tracking rule evolution';
-COMMENT ON COLUMN rule.matcher_type IS 'Matching strategy: CONTAINS (case-insensitive) or REGEX';
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'rule' AND column_name = 'matcher_type'
+  ) THEN
+    COMMENT ON COLUMN rule.matcher_type IS 'Matching strategy: CONTAINS (case-insensitive) or REGEX';
+  END IF;
+END $$;
 COMMENT ON COLUMN rule.pattern IS 'Pattern to match against transaction documento field';
 COMMENT ON COLUMN rule.active IS 'Whether this rule is currently used for classification';
 
