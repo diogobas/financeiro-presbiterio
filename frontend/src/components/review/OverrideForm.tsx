@@ -10,6 +10,10 @@ export default function OverrideForm({ transactionId: externallySelectedId, onSu
   const [category, setCategory] = useState('');
   const [tipo, setTipo] = useState<'RECEITA' | 'DESPESA' | ''>('');
   const [note, setNote] = useState('');
+  const [createRule, setCreateRule] = useState(false);
+  const [ruleName, setRuleName] = useState('');
+  const [rulePattern, setRulePattern] = useState('');
+  const [ruleMatchType, setRuleMatchType] = useState<'CONTAINS' | 'REGEX'>('CONTAINS');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,10 +30,30 @@ export default function OverrideForm({ transactionId: externallySelectedId, onSu
 
     setLoading(true);
     try {
+      const payload: any = {
+        newCategoryId: category,
+        newTipo: tipo,
+        reason: note,
+      };
+
+      if (createRule) {
+        payload.createRule = true;
+        payload.rule = {
+          name: ruleName || `Override for ${transactionId}`,
+          pattern: rulePattern || ruleName || 'TODO',
+          matchType: ruleMatchType,
+          category: category,
+          tipo: tipo,
+          priority: 0,
+          enabled: true,
+          createdBy: 'ui-override',
+        };
+      }
+
       const res = await fetch(`/transactions/${encodeURIComponent(transactionId)}/override`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newCategoryId: category, newTipo: tipo, reason: note }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -80,6 +104,38 @@ export default function OverrideForm({ transactionId: externallySelectedId, onSu
           <textarea value={note} onChange={(e) => setNote(e.target.value)} />
         </label>
       </div>
+      <div style={{ marginTop: 8 }}>
+        <label>
+          <input type="checkbox" checked={createRule} onChange={(e) => setCreateRule(e.target.checked)} />{' '}
+          Create rule from this decision
+        </label>
+      </div>
+
+      {createRule && (
+        <div style={{ marginTop: 8, padding: 8, border: '1px solid #ddd' }}>
+          <div>
+            <label>
+              Rule name
+              <input value={ruleName} onChange={(e) => setRuleName(e.target.value)} />
+            </label>
+          </div>
+          <div>
+            <label>
+              Pattern
+              <input value={rulePattern} onChange={(e) => setRulePattern(e.target.value)} />
+            </label>
+          </div>
+          <div>
+            <label>
+              Match type
+              <select value={ruleMatchType} onChange={(e) => setRuleMatchType(e.target.value as any)}>
+                <option value="CONTAINS">CONTAINS</option>
+                <option value="REGEX">REGEX</option>
+              </select>
+            </label>
+          </div>
+        </div>
+      )}
 
       {error && <div style={{ color: 'red' }}>{error}</div>}
 
