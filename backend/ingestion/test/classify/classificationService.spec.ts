@@ -541,7 +541,7 @@ describe('ClassificationService Tests', () => {
         enabled: true,
       });
 
-      const rule2 = await repository.create({
+      await repository.create({
         name: 'Rule 2',
         pattern: 'PATTERN2',
         matchType: 'CONTAINS',
