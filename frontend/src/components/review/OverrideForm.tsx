@@ -76,7 +76,7 @@ export default function OverrideForm({ transactionId: externallySelectedId, onSu
       });
 
       if (!res.ok) {
-        const body = await res.json().catch(() => ({} as { message?: string }));
+        const body = await res.json().catch(() => ({}) as { message?: string });
         setError(body?.message || 'Failed to apply override');
         return;
       }
@@ -110,7 +110,10 @@ export default function OverrideForm({ transactionId: externallySelectedId, onSu
       <div>
         <label>
           Tipo
-          <select value={tipo} onChange={(e) => setTipo(e.target.value as 'RECEITA' | 'DESPESA' | '')}>
+          <select
+            value={tipo}
+            onChange={(e) => setTipo(e.target.value as 'RECEITA' | 'DESPESA' | '')}
+          >
             <option value="">Select</option>
             <option value="RECEITA">RECEITA</option>
             <option value="DESPESA">DESPESA</option>
@@ -125,7 +128,11 @@ export default function OverrideForm({ transactionId: externallySelectedId, onSu
       </div>
       <div style={{ marginTop: 8 }}>
         <label>
-          <input type="checkbox" checked={createRule} onChange={(e) => setCreateRule(e.target.checked)} />{' '}
+          <input
+            type="checkbox"
+            checked={createRule}
+            onChange={(e) => setCreateRule(e.target.checked)}
+          />{' '}
           Create rule from this decision
         </label>
       </div>
@@ -147,7 +154,10 @@ export default function OverrideForm({ transactionId: externallySelectedId, onSu
           <div>
             <label>
               Match type
-              <select value={ruleMatchType} onChange={(e) => setRuleMatchType(e.target.value as 'CONTAINS' | 'REGEX')}>
+              <select
+                value={ruleMatchType}
+                onChange={(e) => setRuleMatchType(e.target.value as 'CONTAINS' | 'REGEX')}
+              >
                 <option value="CONTAINS">CONTAINS</option>
                 <option value="REGEX">REGEX</option>
               </select>
@@ -158,7 +168,9 @@ export default function OverrideForm({ transactionId: externallySelectedId, onSu
 
       {error && <div style={{ color: 'red' }}>{error}</div>}
 
-      <button type="submit" disabled={loading}>{loading ? 'Applying…' : 'Apply Override'}</button>
+      <button type="submit" disabled={loading}>
+        {loading ? 'Applying…' : 'Apply Override'}
+      </button>
     </form>
   );
 }

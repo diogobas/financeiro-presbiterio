@@ -40,10 +40,15 @@ export default function ReviewPage() {
 
       <div style={{ marginBottom: 12 }}>
         <label>
-          Account ID:{' '}
-          <input value={accountId} onChange={(e) => setAccountId(e.target.value)} />
+          Account ID: <input value={accountId} onChange={(e) => setAccountId(e.target.value)} />
         </label>
-        <button style={{ marginLeft: 8 }} onClick={() => { setPage(1); fetchList(); }}>
+        <button
+          style={{ marginLeft: 8 }}
+          onClick={() => {
+            setPage(1);
+            fetchList();
+          }}
+        >
           Load
         </button>
       </div>

@@ -20,18 +20,18 @@ function App() {
           >
             📤 Upload CSV
           </button>
-            <button
-              className={`nav-tab ${currentPage === 'rules' ? 'active' : ''}`}
-              onClick={() => setCurrentPage('rules')}
-            >
-              📋 Rules
-            </button>
-            <button
-              className={`nav-tab ${currentPage === 'review' ? 'active' : ''}`}
-              onClick={() => setCurrentPage('review')}
-            >
-              🧾 Review
-            </button>
+          <button
+            className={`nav-tab ${currentPage === 'rules' ? 'active' : ''}`}
+            onClick={() => setCurrentPage('rules')}
+          >
+            📋 Rules
+          </button>
+          <button
+            className={`nav-tab ${currentPage === 'review' ? 'active' : ''}`}
+            onClick={() => setCurrentPage('review')}
+          >
+            🧾 Review
+          </button>
         </div>
       </nav>
 
