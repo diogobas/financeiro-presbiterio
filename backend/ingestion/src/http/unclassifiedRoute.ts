@@ -20,6 +20,5 @@ export async function registerUnclassifiedRoutes(server: FastifyInstance): Promi
     return reply.status(200).send({ data: result.transactions, total: result.total, page, limit });
   });
 }
-import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { ITransactionRepository } from '../domain/repositories';
 
