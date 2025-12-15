@@ -6,6 +6,8 @@ import { initializePool, closePool, runMigrations } from './config/db';
 import importsRoute from './http/importsRoute';
 import importStatusRoute, { getUploadedMonthsHandler } from './http/importStatusRoute';
 import { createRulesRoute } from './http/rulesRoute';
+import { registerOverrideRoutes } from './http/overrideRoute';
+import { registerUnclassifiedRoutes } from './http/unclassifiedRoute';
 import { PostgresRuleRepository } from './infrastructure/repositories';
 
 // Load environment variables
@@ -87,6 +89,10 @@ const start = async () => {
     // Register rules route
     const ruleRepository = new PostgresRuleRepository();
     await createRulesRoute(server, ruleRepository);
+
+    // Register unclassified and override routes for manual review
+    await registerUnclassifiedRoutes(server);
+    await registerOverrideRoutes(server);
 
     const port = Number(process.env.PORT) || 3000;
     await server.listen({ port, host: '0.0.0.0' });

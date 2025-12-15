@@ -199,17 +199,22 @@ description: "Task list template for feature implementation"
 
 ### Tests for User Story 3
 
-- [ ] T034 [P] [US3] Contract tests for /transactions/unclassified and /transactions/{id}/override at backend/ingestion/test/review.contract.spec.ts
+- [x] T034 [P] [US3] Contract tests for /transactions/unclassified and /transactions/{id}/override at backend/ingestion/test/review.contract.spec.ts
 
 ### Implementation for User Story 3
 
-- [ ] T035 [US3] Implement list unclassified endpoint at backend/ingestion/src/http/unclassifiedRoute.ts
-- [ ] T036 [US3] Implement override endpoint storing audit trail at backend/ingestion/src/http/overrideRoute.ts
-- [ ] T037 [P] [US3] Frontend Review queue page at frontend/src/pages/ReviewPage.tsx
-- [ ] T038 [US3] Frontend Override form with optional "create rule from decision" at frontend/src/components/review/OverrideForm.tsx
-- [ ] T039 [US3] DB migrations for ClassificationOverride table and audit columns at backend/ingestion/src/db/migrations/*.sql
+- [x] T035 [US3] Implement list unclassified endpoint at backend/ingestion/src/http/unclassifiedRoute.ts
+- [x] T036 [US3] Implement override endpoint storing audit trail at backend/ingestion/src/http/overrideRoute.ts (transactional update + audit row)
+- [x] T037 [P] [US3] Frontend Review queue page at frontend/src/pages/ReviewPage.tsx (lists unclassified, pagination)
+- [x] T038 [US3] Frontend Override form with optional "create rule from decision" at frontend/src/components/review/OverrideForm.tsx (sends `createRule` payload)
+- [x] T039 [US3] DB migrations for ClassificationOverride table and audit columns at backend/ingestion/src/db/migrations/*.sql
 
-**Checkpoint**: US3 functional; transparency assured
+**Checkpoint**: US3 implemented and pushed to `feature/US3-manual-review` (review queue, override flow, audit table, frontend UI)
+
+### Recent updates
+- Removed duplicate GET registration for `/transactions/unclassified` (kept in `unclassifiedRoute.ts`).
+- Fixed frontend theme so `ReviewPage` content is visible (`frontend/src/index.css`).
+- Added `scripts/use-java21.sh` and updated `MANUAL_TESTING_GUIDE.md` to recommend Temurin JDK 21 for the reporting service.
 
 ---
 
