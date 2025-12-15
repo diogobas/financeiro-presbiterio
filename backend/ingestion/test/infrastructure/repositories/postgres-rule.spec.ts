@@ -13,7 +13,7 @@
  */
 
 import { PostgresRuleRepository } from '../../../src/infrastructure/repositories';
-import type { Rule, CreateRuleInput, UpdateRuleInput } from '../../../src/domain/types';
+import type { CreateRuleInput, UpdateRuleInput } from '../../../src/domain/types';
 
 // Skip these tests if database is not available
 const shouldRun = process.env.DATABASE_URL !== undefined;
@@ -105,12 +105,7 @@ describeFn('PostgresRuleRepository', () => {
 
       await repository.create(input);
 
-      // Try to create with same name
-      const _duplicateInput: CreateRuleInput = {
-        name: 'Duplicate',
-        pattern: 'PATTERN2',
-        matchType: 'CONTAINS',
-      };
+      // Try to create with same name (duplicate input)
 
       // Should fail or return error
       // Implementation detail: could be a thrown error or null

@@ -2,10 +2,15 @@ import React, { useEffect, useState } from 'react';
 
 type Props = {
   transactionId?: string;
+  transactionDocumento?: string;
   onSuccess?: () => void;
 };
 
-export default function OverrideForm({ transactionId: externallySelectedId, onSuccess }: Props) {
+export default function OverrideForm({
+  transactionId: externallySelectedId,
+  transactionDocumento: externalDocumento,
+  onSuccess,
+}: Props) {
   const [transactionId, setTransactionId] = useState(externallySelectedId || '');
   const [category, setCategory] = useState('');
   const [tipo, setTipo] = useState<'RECEITA' | 'DESPESA' | ''>('');
@@ -16,10 +21,18 @@ export default function OverrideForm({ transactionId: externallySelectedId, onSu
   const [ruleMatchType, setRuleMatchType] = useState<'CONTAINS' | 'REGEX'>('CONTAINS');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastTransactionId, setLastTransactionId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    if (externallySelectedId) setTransactionId(externallySelectedId);
-  }, [externallySelectedId]);
+    if (externallySelectedId && externallySelectedId !== lastTransactionId) {
+      setTransactionId(externallySelectedId);
+      setLastTransactionId(externallySelectedId);
+      // Pre-populate pattern with documento when a new transaction is selected
+      if (externalDocumento) {
+        setRulePattern(externalDocumento);
+      }
+    }
+  }, [externallySelectedId, externalDocumento, lastTransactionId]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,6 +40,8 @@ export default function OverrideForm({ transactionId: externallySelectedId, onSu
     if (!transactionId) return setError('transaction id is required');
     if (!category) return setError('category id is required');
     if (!tipo) return setError('tipo (RECEITA|DESPESA) is required');
+    if (createRule && !rulePattern.trim())
+      return setError('pattern is required when creating a rule');
 
     setLoading(true);
     try {
@@ -59,7 +74,7 @@ export default function OverrideForm({ transactionId: externallySelectedId, onSu
         payload.createRule = true;
         payload.rule = {
           name: ruleName || `Override for ${transactionId}`,
-          pattern: rulePattern || ruleName || 'TODO',
+          pattern: rulePattern.trim(),
           matchType: ruleMatchType,
           category: category,
           tipo: tipo as 'RECEITA' | 'DESPESA',
@@ -85,6 +100,9 @@ export default function OverrideForm({ transactionId: externallySelectedId, onSu
       setTipo('');
       setNote('');
       setTransactionId('');
+      setRulePattern('');
+      setRuleName('');
+      setCreateRule(false);
       if (onSuccess) onSuccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -147,9 +165,17 @@ export default function OverrideForm({ transactionId: externallySelectedId, onSu
           </div>
           <div>
             <label>
-              Pattern
-              <input value={rulePattern} onChange={(e) => setRulePattern(e.target.value)} />
+              Pattern <span style={{ color: 'red' }}>*</span>
+              <input
+                value={rulePattern}
+                onChange={(e) => setRulePattern(e.target.value)}
+                placeholder={externalDocumento || 'Enter pattern to match transaction'}
+                required
+              />
             </label>
+            <div style={{ fontSize: '0.85em', color: '#666', marginTop: 4 }}>
+              Pattern to match against transaction documento field
+            </div>
           </div>
           <div>
             <label>

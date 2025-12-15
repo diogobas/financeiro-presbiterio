@@ -459,12 +459,6 @@ describe('Rules API - POST /rules', () => {
 
   describe('Validation Cases', () => {
     it('should reject missing required field: name', () => {
-      const _request: Partial<RuleRequest> = {
-        pattern: 'PADARIA',
-        matchType: 'contains',
-        // name missing
-      };
-
       const errorResponse: ErrorResponse = {
         error: 'BadRequest',
         message: 'Field "name" is required',
@@ -477,12 +471,6 @@ describe('Rules API - POST /rules', () => {
     });
 
     it('should reject missing required field: pattern', () => {
-      const _request: Partial<RuleRequest> = {
-        name: 'Padaria',
-        matchType: 'contains',
-        // pattern missing
-      };
-
       const errorResponse: ErrorResponse = {
         error: 'BadRequest',
         message: 'Field "pattern" is required',
@@ -494,12 +482,6 @@ describe('Rules API - POST /rules', () => {
     });
 
     it('should reject invalid matchType value', () => {
-      const _request = {
-        name: 'Padaria',
-        pattern: 'PADARIA',
-        matchType: 'invalid-type' as any,
-      };
-
       const errorResponse: ErrorResponse = {
         error: 'BadRequest',
         message: 'Field "matchType" must be "contains" or "regex"',
@@ -511,12 +493,6 @@ describe('Rules API - POST /rules', () => {
     });
 
     it('should reject invalid regex pattern', () => {
-      const _request: RuleRequest = {
-        name: 'Bad Regex',
-        pattern: '[invalid(',
-        matchType: 'regex',
-      };
-
       const errorResponse: ErrorResponse = {
         error: 'BadRequest',
         message: 'Field "pattern" is not a valid regex',
@@ -528,24 +504,6 @@ describe('Rules API - POST /rules', () => {
     });
 
     it('should reject duplicate rule name', () => {
-      const _existingRule: RuleResponse = {
-        id: 'rule-001',
-        name: 'Padaria',
-        pattern: 'PADARIA',
-        matchType: 'contains',
-        version: 1,
-        priority: 0,
-        enabled: true,
-        createdAt: '2025-01-01T10:00:00Z',
-        updatedAt: '2025-01-01T10:00:00Z',
-      };
-
-      const request: RuleRequest = {
-        name: 'Padaria', // Same name
-        pattern: 'PADARIA|PADOKA',
-        matchType: 'regex',
-      };
-
       const errorResponse: ErrorResponse = {
         error: 'Conflict',
         message: 'Rule with name "Padaria" already exists',
@@ -557,12 +515,6 @@ describe('Rules API - POST /rules', () => {
     });
 
     it('should reject empty pattern', () => {
-      const _request: RuleRequest = {
-        name: 'Empty Pattern',
-        pattern: '',
-        matchType: 'contains',
-      };
-
       const errorResponse: ErrorResponse = {
         error: 'BadRequest',
         message: 'Field "pattern" cannot be empty',
@@ -574,12 +526,6 @@ describe('Rules API - POST /rules', () => {
     });
 
     it('should reject empty name', () => {
-      const _request: RuleRequest = {
-        name: '',
-        pattern: 'PADARIA',
-        matchType: 'contains',
-      };
-
       const errorResponse: ErrorResponse = {
         error: 'BadRequest',
         message: 'Field "name" cannot be empty',
@@ -591,12 +537,6 @@ describe('Rules API - POST /rules', () => {
     });
 
     it('should reject name exceeding max length', () => {
-      const _request: RuleRequest = {
-        name: 'X'.repeat(256), // Exceeds typical max of 255
-        pattern: 'PADARIA',
-        matchType: 'contains',
-      };
-
       const errorResponse: ErrorResponse = {
         error: 'BadRequest',
         message: 'Field "name" must not exceed 255 characters',
@@ -608,13 +548,6 @@ describe('Rules API - POST /rules', () => {
     });
 
     it('should reject invalid priority value', () => {
-      const _request: RuleRequest = {
-        name: 'Padaria',
-        pattern: 'PADARIA',
-        matchType: 'contains',
-        priority: -1,
-      };
-
       const errorResponse: ErrorResponse = {
         error: 'BadRequest',
         message: 'Field "priority" must be a non-negative integer',
