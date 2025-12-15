@@ -21,7 +21,7 @@ export async function registerUnclassifiedRoutes(server: FastifyInstance): Promi
           properties: {
             accountId: { type: 'string' },
             page: { type: 'string', pattern: '^[0-9]+$' },
-            limit: { type: 'string', pattern: '^[0-9]+$' }
+            limit: { type: 'string', pattern: '^[0-9]+$' },
           },
         },
       },
@@ -37,7 +37,9 @@ export async function registerUnclassifiedRoutes(server: FastifyInstance): Promi
       }
 
       const result = await transactionRepo.findUnclassified(accountId, limitNum, offset);
-      return reply.status(200).send({ data: result.transactions, total: result.total, page: pageNum, limit: limitNum });
+      return reply
+        .status(200)
+        .send({ data: result.transactions, total: result.total, page: pageNum, limit: limitNum });
     }
   );
 }

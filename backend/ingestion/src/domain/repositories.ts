@@ -354,6 +354,14 @@ export interface IClassificationOverrideRepository {
   create(input: CreateClassificationOverrideInput): Promise<ClassificationOverride>;
 
   /**
+   * Create override and update transaction in a single transaction
+   * This is the recommended method for applying overrides
+   */
+  createWithTransactionUpdate(
+    input: CreateClassificationOverrideInput
+  ): Promise<ClassificationOverride>;
+
+  /**
    * Get override statistics
    */
   getStats(

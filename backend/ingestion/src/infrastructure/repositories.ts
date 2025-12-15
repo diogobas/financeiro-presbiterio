@@ -1046,6 +1046,46 @@ export class PostgresClassificationOverrideRepository implements IClassification
     return result.rows[0];
   }
 
+  async createWithTransactionUpdate(
+    input: CreateClassificationOverrideInput
+  ): Promise<ClassificationOverride> {
+    const pool = getPool();
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Insert override
+      const overrideResult = await client.query<ClassificationOverride>(
+        `INSERT INTO classification_override (transaction_id, previous_category_id, previous_tipo, new_category_id, new_tipo, actor, reason)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        [
+          input.transactionId,
+          input.previousCategoryId || null,
+          input.previousTipo || null,
+          input.newCategoryId,
+          input.newTipo,
+          input.actor,
+          input.reason || null,
+        ]
+      );
+
+      // Update transaction classification
+      await client.query(
+        `UPDATE transaction SET category_id = $1, tipo = $2, classification_source = 'OVERRIDE', rule_id = NULL, rationale = $3, updated_at = NOW() WHERE id = $4`,
+        [input.newCategoryId, input.newTipo, input.reason || null, input.transactionId]
+      );
+
+      await client.query('COMMIT');
+
+      return overrideResult.rows[0];
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
+
   async getStats(
     startDate?: Date,
     endDate?: Date
