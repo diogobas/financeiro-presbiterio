@@ -45,9 +45,10 @@ This guide walks you through running and testing the complete Bank CSV Reporting
 
 ## Prerequisites
 
-- Docker & Docker Compose installed
-- Node.js 18+ (for frontend/ingestion)
-- Java 17+ & Maven (for reporting)
+-- Docker & Docker Compose installed
+-- Node.js 18+ (for frontend/ingestion)
+-- Java 17+ & Maven (for reporting) — prefer Temurin 21 (set `JAVA_HOME` to JDK 21)
+   - On macOS: `brew install --cask temurin21` and `export JAVA_HOME=$(/usr/libexec/java_home -v21)`
 - 4+ CPU cores / 4GB RAM available
 
 ---
