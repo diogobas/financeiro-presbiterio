@@ -136,50 +136,50 @@ export async function createRulesRoute(server: FastifyInstance, repository: IRul
    * Errors: 400 Bad Request, 401 Unauthorized, 403 Forbidden
    */
   server.get('/rules', async (request: FastifyRequest, reply: FastifyReply) => {
-      // Parse and validate query parameters
-      const query = request.query as any;
-      const page = parseInt(query.page as string, 10) || 1;
-      const limit = parseInt(query.limit as string, 10) || 20;
+    // Parse and validate query parameters
+    const query = request.query as any;
+    const page = parseInt(query.page as string, 10) || 1;
+    const limit = parseInt(query.limit as string, 10) || 20;
 
-      // Validation
-      if (page < 1) {
-        return sendError(reply, 400, 'BadRequest', 'Parameter "page" must be a positive integer');
-      }
-      if (limit < 1 || limit > 100) {
-        return sendError(reply, 400, 'BadRequest', 'Parameter "limit" must be between 1 and 100');
-      }
+    // Validation
+    if (page < 1) {
+      return sendError(reply, 400, 'BadRequest', 'Parameter "page" must be a positive integer');
+    }
+    if (limit < 1 || limit > 100) {
+      return sendError(reply, 400, 'BadRequest', 'Parameter "limit" must be between 1 and 100');
+    }
 
-      // Build filter options
-      const options: any = {
-        limit,
-        offset: (page - 1) * limit,
-      };
+    // Build filter options
+    const options: any = {
+      limit,
+      offset: (page - 1) * limit,
+    };
 
-      if (query.category) {
-        options.category = query.category as string;
-      }
+    if (query.category) {
+      options.category = query.category as string;
+    }
 
-      if (query.tipo) {
-        options.tipo = query.tipo as string;
-      }
+    if (query.tipo) {
+      options.tipo = query.tipo as string;
+    }
 
-      if (query.enabled !== undefined) {
-        options.enabled = query.enabled === 'true';
-      }
+    if (query.enabled !== undefined) {
+      options.enabled = query.enabled === 'true';
+    }
 
-      // Fetch rules from repository
-      const result = await repository.findAll(options);
+    // Fetch rules from repository
+    const result = await repository.findAll(options);
 
-      // Build response
-      const response: ListRulesResponseDto = {
-        data: result.rules.map((rule) => ruleToDto(rule)),
-        total: result.total,
-        page,
-        limit,
-        hasMore: page * limit < result.total,
-      };
+    // Build response
+    const response: ListRulesResponseDto = {
+      data: result.rules.map((rule) => ruleToDto(rule)),
+      total: result.total,
+      page,
+      limit,
+      hasMore: page * limit < result.total,
+    };
 
-      reply.status(200).send(response);
+    reply.status(200).send(response);
   });
 
   /**
