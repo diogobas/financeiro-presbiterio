@@ -38,7 +38,8 @@ export default function OverrideForm({
     if (!transactionId) return setError('transaction id is required');
     if (!category) return setError('category id is required');
     if (!tipo) return setError('tipo (RECEITA|DESPESA) is required');
-    if (createRule && !rulePattern) return setError('pattern is required when creating a rule');
+    if (createRule && !rulePattern.trim())
+      return setError('pattern is required when creating a rule');
 
     setLoading(true);
     try {
@@ -71,7 +72,7 @@ export default function OverrideForm({
         payload.createRule = true;
         payload.rule = {
           name: ruleName || `Override for ${transactionId}`,
-          pattern: rulePattern,
+          pattern: rulePattern.trim(),
           matchType: ruleMatchType,
           category: category,
           tipo: tipo as 'RECEITA' | 'DESPESA',
