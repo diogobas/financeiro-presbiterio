@@ -138,8 +138,9 @@ export async function createRulesRoute(server: FastifyInstance, repository: IRul
   server.get('/rules', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       // Parse and validate query parameters
-      let page = parseInt(request.query.page as string, 10) || 1;
-      let limit = parseInt(request.query.limit as string, 10) || 20;
+      const query = request.query as any;
+      let page = parseInt(query.page as string, 10) || 1;
+      let limit = parseInt(query.limit as string, 10) || 20;
 
       // Validation
       if (page < 1) {
@@ -155,16 +156,16 @@ export async function createRulesRoute(server: FastifyInstance, repository: IRul
         offset: (page - 1) * limit,
       };
 
-      if (request.query.category) {
-        options.category = request.query.category as string;
+      if (query.category) {
+        options.category = query.category as string;
       }
 
-      if (request.query.tipo) {
-        options.tipo = request.query.tipo as string;
+      if (query.tipo) {
+        options.tipo = query.tipo as string;
       }
 
-      if (request.query.enabled !== undefined) {
-        options.enabled = request.query.enabled === 'true';
+      if (query.enabled !== undefined) {
+        options.enabled = query.enabled === 'true';
       }
 
       // Fetch rules from repository

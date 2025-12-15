@@ -1,5 +1,17 @@
 -- Migration 003: Update rule table for enhanced rule management
 -- Adds: name, description, category (string), priority, enabled
+-- Renames: matcher_type to match_type
+
+-- Rename matcher_type to match_type (if it exists)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'rule' AND column_name = 'matcher_type'
+  ) THEN
+    ALTER TABLE rule RENAME COLUMN matcher_type TO match_type;
+  END IF;
+END $$;
 
 -- Add new columns for enhanced rule management
 ALTER TABLE rule ADD COLUMN IF NOT EXISTS name VARCHAR(255);

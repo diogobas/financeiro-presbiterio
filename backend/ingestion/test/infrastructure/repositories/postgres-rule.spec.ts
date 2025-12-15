@@ -9,12 +9,17 @@
  * - Deduplication by name
  *
  * These tests use a real or in-memory PostgreSQL database.
+ * Skipped when DATABASE_URL is not set (requires Docker/Postgres to run).
  */
 
-import { PostgresRuleRepository } from '../../src/infrastructure/repositories';
-import { Rule, CreateRuleInput, UpdateRuleInput } from '../../src/domain/types';
+import { PostgresRuleRepository } from '../../../src/infrastructure/repositories';
+import { Rule, CreateRuleInput, UpdateRuleInput } from '../../../src/domain/types';
 
-describe('PostgresRuleRepository', () => {
+// Skip these tests if database is not available
+const shouldRun = process.env.DATABASE_URL !== undefined;
+const describeFn = shouldRun ? describe : describe.skip;
+
+describeFn('PostgresRuleRepository', () => {
   let repository: PostgresRuleRepository;
 
   beforeEach(() => {
@@ -192,7 +197,7 @@ describe('PostgresRuleRepository', () => {
       const foodRules = await repository.findByCategory('Alimentação');
 
       expect(foodRules.length).toBeGreaterThan(0);
-      expect(foodRules.every((r) => r.category === 'Alimentação')).toBe(true);
+      expect(foodRules.every((r: any) => r.category === 'Alimentação')).toBe(true);
     });
 
     it('should filter rules by tipo (Receita/Despesa)', async () => {
@@ -216,7 +221,7 @@ describe('PostgresRuleRepository', () => {
       const expenseRules = await repository.findByType('DESPESA');
 
       expect(expenseRules.length).toBeGreaterThan(0);
-      expect(expenseRules.every((r) => r.tipo === 'DESPESA')).toBe(true);
+      expect(expenseRules.every((r: any) => r.tipo === 'DESPESA')).toBe(true);
     });
 
     it('should find only active (enabled) rules', async () => {
@@ -239,8 +244,8 @@ describe('PostgresRuleRepository', () => {
 
       const activeRules = await repository.findActive();
 
-      expect(activeRules.some((r) => r.name === 'Active Rule')).toBe(true);
-      expect(activeRules.some((r) => r.name === 'Inactive Rule')).toBe(false);
+      expect(activeRules.some((r: any) => r.name === 'Active Rule')).toBe(true);
+      expect(activeRules.some((r: any) => r.name === 'Inactive Rule')).toBe(false);
     });
   });
 

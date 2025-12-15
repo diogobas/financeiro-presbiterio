@@ -776,8 +776,8 @@ export class PostgresRuleRepository implements IRuleRepository {
       'SELECT id, name, description, category, tipo, pattern, match_type as "matchType", version, priority, enabled, created_at as "createdAt", updated_at as "updatedAt", created_by as "createdBy" FROM rule',
       'SELECT COUNT(*) as count FROM rule'
     );
-    const countResult = await getPool().query<{ count: number }>(countQuery, params);
-    const total = parseInt(countResult.rows[0].count as any, 10);
+    const countResult = await getPool().query<{ count: string | number }>(countQuery, params);
+    const total = countResult.rows[0] ? parseInt(String(countResult.rows[0].count), 10) : 0;
 
     // Apply pagination
     query += ` ORDER BY priority DESC, updated_at DESC`;

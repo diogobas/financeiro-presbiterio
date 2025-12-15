@@ -232,7 +232,7 @@ data class Rule(
     @Column(nullable = false)
     val version: Int = 1,
 
-    @Column(name = "matcher_type", nullable = false)
+    @Column(name = "match_type", nullable = false)
     @Enumerated(EnumType.STRING)
     val matcherType: MatcherType = MatcherType.CONTAINS,
 
