@@ -17,16 +17,26 @@ export default function ReviewPage() {
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
   const [selected, setSelected] = useState<Tx | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchList = async () => {
     if (!accountId) return;
-    const res = await fetch(
-      `/transactions/unclassified?accountId=${encodeURIComponent(accountId)}&page=${page}&limit=${limit}`
-    );
-    if (!res.ok) return;
-    const body = await res.json();
-    setTransactions(body.data || []);
-    setTotal(body.total || 0);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/transactions/unclassified?accountId=${encodeURIComponent(accountId)}&page=${page}&limit=${limit}`
+      );
+      if (!res.ok) {
+        const errorText = await res.text();
+        setError(`Failed to fetch transactions: ${res.status} ${errorText || res.statusText}`);
+        return;
+      }
+      const body = await res.json();
+      setTransactions(body.data || []);
+      setTotal(body.total || 0);
+    } catch (err) {
+      setError(`Network error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
   };
 
   useEffect(() => {
@@ -52,6 +62,21 @@ export default function ReviewPage() {
           Load
         </button>
       </div>
+
+      {error && (
+        <div
+          style={{
+            padding: '12px',
+            marginBottom: '12px',
+            backgroundColor: '#fee',
+            border: '1px solid #c33',
+            borderRadius: '4px',
+            color: '#c33',
+          }}
+        >
+          {error}
+        </div>
+      )}
 
       <div className="review-list">
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>

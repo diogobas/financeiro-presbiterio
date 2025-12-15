@@ -1,23 +1,40 @@
-import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { PostgresTransactionRepository } from '../infrastructure/repositories';
-import { CreateClassificationOverrideInput } from '../domain/types';
+import { FastifyInstance, FastifyRequest } from 'fastify';
+import {
+  PostgresTransactionRepository,
+  PostgresClassificationOverrideRepository,
+} from '../infrastructure/repositories';
+import { CreateClassificationOverrideInput, TransactionType } from '../domain/types';
+import { UserContext } from '../middleware/auth.types';
+
+interface OverrideRequestParams {
+  id: string;
+}
+
+interface OverrideRequestBody {
+  newCategoryId: string;
+  newTipo: TransactionType;
+  reason?: string;
+}
+
+interface AuthenticatedRequest extends FastifyRequest<{
+  Params: OverrideRequestParams;
+  Body: OverrideRequestBody;
+}> {
+  user?: UserContext;
+}
 
 export async function registerOverrideRoutes(server: FastifyInstance): Promise<void> {
   const transactionRepo = new PostgresTransactionRepository();
+  const overrideRepo = new PostgresClassificationOverrideRepository();
 
   // POST /transactions/:id/override
-  server.post(
+  server.post<{ Params: OverrideRequestParams; Body: OverrideRequestBody }>(
     '/transactions/:id/override',
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      const params = request.params as { id?: string };
-      const { id } = params;
-      const body = request.body as
-        | { newCategoryId?: string; newTipo?: string; reason?: string }
-        | undefined;
+    async (request: AuthenticatedRequest, reply) => {
+      const { id } = request.params;
+      const body = request.body;
 
-      if (!id)
-        return reply.status(400).send({ error: 'BadRequest', message: 'Transaction id required' });
-      if (!body || !body.newCategoryId || !body.newTipo) {
+      if (!body.newCategoryId || !body.newTipo) {
         return reply
           .status(400)
           .send({ error: 'BadRequest', message: 'newCategoryId and newTipo are required' });
@@ -35,46 +52,14 @@ export async function registerOverrideRoutes(server: FastifyInstance): Promise<v
         previousTipo: tx.tipo,
         newCategoryId: body.newCategoryId,
         newTipo: body.newTipo,
-        actor: (request as any).user?.id || 'system',
-        reason: body.reason || null,
+        actor: request.user?.userId || 'system',
+        reason: body.reason || undefined,
       };
 
-      // Create override and update transaction inside a DB transaction
-      const pool = (await import('../config/db')).getPool();
-      const client = await pool.connect();
-      try {
-        await client.query('BEGIN');
+      // Create override and update transaction using repository method
+      const override = await overrideRepo.createWithTransactionUpdate(input);
 
-        // Insert override
-        const overrideRow = await client.query(
-          `INSERT INTO classification_override (transaction_id, previous_category_id, previous_tipo, new_category_id, new_tipo, actor, reason)
-         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-          [
-            input.transactionId,
-            input.previousCategoryId || null,
-            input.previousTipo || null,
-            input.newCategoryId,
-            input.newTipo,
-            input.actor,
-            input.reason || null,
-          ]
-        );
-
-        // Update transaction classification
-        await client.query(
-          `UPDATE transaction SET category_id = $1, tipo = $2, classification_source = 'OVERRIDE', rule_id = NULL, rationale = $3, updated_at = NOW() WHERE id = $4`,
-          [input.newCategoryId, input.newTipo, input.reason || null, id]
-        );
-
-        await client.query('COMMIT');
-
-        return reply.status(200).send({ override: overrideRow.rows[0] });
-      } catch (err) {
-        await client.query('ROLLBACK');
-        throw err;
-      } finally {
-        client.release();
-      }
+      return reply.status(200).send({ override });
     }
   );
 }
