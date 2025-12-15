@@ -96,6 +96,7 @@ export default function ReviewPage() {
       <h2 style={{ marginTop: 20 }}>Override</h2>
       <OverrideForm
         transactionId={selected ? selected.id : undefined}
+        transactionDocumento={selected ? selected.documento || undefined : undefined}
         onSuccess={() => {
           setSelected(null);
           fetchList().catch(console.error);
