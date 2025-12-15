@@ -86,7 +86,6 @@ describe('Review API - POST /transactions/:id/override', () => {
     const res: OverrideResponse = {
       id: 'ov-1',
       transactionId: 'tx-1',
-      previousCategoryId: null as any,
       newCategoryId: req.newCategoryId,
       actor: 'user-1',
       reason: req.reason,
