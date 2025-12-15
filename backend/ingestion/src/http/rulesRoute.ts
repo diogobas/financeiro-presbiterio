@@ -136,11 +136,10 @@ export async function createRulesRoute(server: FastifyInstance, repository: IRul
    * Errors: 400 Bad Request, 401 Unauthorized, 403 Forbidden
    */
   server.get('/rules', async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
       // Parse and validate query parameters
       const query = request.query as any;
-      let page = parseInt(query.page as string, 10) || 1;
-      let limit = parseInt(query.limit as string, 10) || 20;
+      const page = parseInt(query.page as string, 10) || 1;
+      const limit = parseInt(query.limit as string, 10) || 20;
 
       // Validation
       if (page < 1) {
@@ -181,9 +180,6 @@ export async function createRulesRoute(server: FastifyInstance, repository: IRul
       };
 
       reply.status(200).send(response);
-    } catch (error) {
-      throw error;
-    }
   });
 
   /**
