@@ -53,7 +53,7 @@ export async function registerOverrideRoutes(server: FastifyInstance): Promise<v
         newCategoryId: body.newCategoryId,
         newTipo: body.newTipo,
         actor: request.user?.userId || 'system',
-        reason: body.reason || undefined,
+        reason: body.reason,
       };
 
       // Create override and update transaction using repository method

@@ -64,16 +64,7 @@ export default function ReviewPage() {
       </div>
 
       {error && (
-        <div
-          style={{
-            padding: '12px',
-            marginBottom: '12px',
-            backgroundColor: '#fee',
-            border: '1px solid #c33',
-            borderRadius: '4px',
-            color: '#c33',
-          }}
-        >
+        <div className="error-banner">
           {error}
         </div>
       )}
