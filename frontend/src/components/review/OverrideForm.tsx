@@ -26,11 +26,11 @@ export default function OverrideForm({
     if (externallySelectedId) {
       setTransactionId(externallySelectedId);
       // Pre-populate pattern with documento when a transaction is selected
-      if (externalDocumento && !rulePattern) {
+      if (externalDocumento) {
         setRulePattern(externalDocumento);
       }
     }
-  }, [externallySelectedId, externalDocumento, rulePattern]);
+  }, [externallySelectedId, externalDocumento]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
