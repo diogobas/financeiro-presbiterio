@@ -30,9 +30,28 @@ export default function OverrideForm({ transactionId: externallySelectedId, onSu
 
     setLoading(true);
     try {
-      const payload: any = {
+      type RuleCreate = {
+        name: string;
+        pattern: string;
+        matchType: 'CONTAINS' | 'REGEX';
+        category: string;
+        tipo: 'RECEITA' | 'DESPESA';
+        priority: number;
+        enabled: boolean;
+        createdBy: string;
+      };
+
+      type OverridePayload = {
+        newCategoryId: string;
+        newTipo: 'RECEITA' | 'DESPESA';
+        reason?: string;
+        createRule?: boolean;
+        rule?: RuleCreate;
+      };
+
+      const payload: OverridePayload = {
         newCategoryId: category,
-        newTipo: tipo,
+        newTipo: tipo as 'RECEITA' | 'DESPESA',
         reason: note,
       };
 
@@ -43,11 +62,11 @@ export default function OverrideForm({ transactionId: externallySelectedId, onSu
           pattern: rulePattern || ruleName || 'TODO',
           matchType: ruleMatchType,
           category: category,
-          tipo: tipo,
+          tipo: tipo as 'RECEITA' | 'DESPESA',
           priority: 0,
           enabled: true,
           createdBy: 'ui-override',
-        };
+        } as RuleCreate;
       }
 
       const res = await fetch(`/transactions/${encodeURIComponent(transactionId)}/override`, {
@@ -57,7 +76,7 @@ export default function OverrideForm({ transactionId: externallySelectedId, onSu
       });
 
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
+        const body = await res.json().catch(() => ({} as { message?: string }));
         setError(body?.message || 'Failed to apply override');
         return;
       }
@@ -66,7 +85,7 @@ export default function OverrideForm({ transactionId: externallySelectedId, onSu
       setTipo('');
       setNote('');
       setTransactionId('');
-      onSuccess && onSuccess();
+      if (onSuccess) onSuccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -91,7 +110,7 @@ export default function OverrideForm({ transactionId: externallySelectedId, onSu
       <div>
         <label>
           Tipo
-          <select value={tipo} onChange={(e) => setTipo(e.target.value as any)}>
+          <select value={tipo} onChange={(e) => setTipo(e.target.value as 'RECEITA' | 'DESPESA' | '')}>
             <option value="">Select</option>
             <option value="RECEITA">RECEITA</option>
             <option value="DESPESA">DESPESA</option>
@@ -128,7 +147,7 @@ export default function OverrideForm({ transactionId: externallySelectedId, onSu
           <div>
             <label>
               Match type
-              <select value={ruleMatchType} onChange={(e) => setRuleMatchType(e.target.value as any)}>
+              <select value={ruleMatchType} onChange={(e) => setRuleMatchType(e.target.value as 'CONTAINS' | 'REGEX')}>
                 <option value="CONTAINS">CONTAINS</option>
                 <option value="REGEX">REGEX</option>
               </select>
