@@ -21,16 +21,18 @@ export default function OverrideForm({
   const [ruleMatchType, setRuleMatchType] = useState<'CONTAINS' | 'REGEX'>('CONTAINS');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastTransactionId, setLastTransactionId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    if (externallySelectedId) {
+    if (externallySelectedId && externallySelectedId !== lastTransactionId) {
       setTransactionId(externallySelectedId);
-      // Pre-populate pattern with documento when a transaction is selected
+      setLastTransactionId(externallySelectedId);
+      // Pre-populate pattern with documento when a new transaction is selected
       if (externalDocumento) {
         setRulePattern(externalDocumento);
       }
     }
-  }, [externallySelectedId, externalDocumento]);
+  }, [externallySelectedId, externalDocumento, lastTransactionId]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,6 +100,9 @@ export default function OverrideForm({
       setTipo('');
       setNote('');
       setTransactionId('');
+      setRulePattern('');
+      setRuleName('');
+      setCreateRule(false);
       if (onSuccess) onSuccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
