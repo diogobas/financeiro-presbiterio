@@ -1,37 +1,90 @@
-import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { ITransactionRepository } from '../domain/repositories';
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import {
+  PostgresTransactionRepository,
+  PostgresClassificationOverrideRepository,
+} from '../infrastructure/repositories';
+import { CreateClassificationOverrideInput } from '../domain/types';
 
-interface OverrideRequest {
-  transactionId: string;
-  category: string;
-  ruleId?: string; // optional: create rule from decision
-  createRuleFromDecision?: boolean;
-  note?: string;
-}
+export async function registerOverrideRoutes(server: FastifyInstance): Promise<void> {
+  const transactionRepo = new PostgresTransactionRepository();
+  const overrideRepo = new PostgresClassificationOverrideRepository();
 
-export async function createOverrideRoute(server: FastifyInstance, repo: ITransactionRepository) {
-  server.post('/transactions/:id/override', async (request: FastifyRequest, reply: FastifyReply) => {
-    const id = (request.params as any).id as string;
-    const body = request.body as unknown as OverrideRequest;
+  // GET /transactions/unclassified?accountId=&page=&limit=
+  server.get('/transactions/unclassified', async (request: FastifyRequest, reply: FastifyReply) => {
+    const q = request.query as any;
+    const accountId = q.accountId as string;
+    const page = Math.max(parseInt(q.page as string, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(q.limit as string, 10) || 50, 1), 100);
+    const offset = (page - 1) * limit;
 
-    if (!body || !body.category) {
-      return reply.status(400).send({ error: 'BadRequest', message: 'Field "category" is required' });
+    if (!accountId) {
+      return reply.status(400).send({ error: 'BadRequest', message: 'accountId is required' });
     }
 
-    // Persist override via repository (expected API: applyOverride)
-    try {
-      const result = await repo.applyOverride(id, {
-        category: body.category,
-        ruleId: body.ruleId,
-        createdBy: (request as any).user?.id || 'system',
-        note: body.note,
-      });
+    const result = await transactionRepo.findUnclassified(accountId, limit, offset);
+    return reply.status(200).send({ data: result.transactions, total: result.total, page, limit });
+  });
 
-      reply.status(200).send(result);
+  // POST /transactions/:id/override
+  server.post('/transactions/:id/override', async (request: FastifyRequest, reply: FastifyReply) => {
+    const { id } = request.params as any;
+    const body = request.body as any;
+
+    if (!id) return reply.status(400).send({ error: 'BadRequest', message: 'Transaction id required' });
+    if (!body || !body.newCategoryId || !body.newTipo) {
+      return reply.status(400).send({ error: 'BadRequest', message: 'newCategoryId and newTipo are required' });
+    }
+
+    // Get existing transaction
+    const tx = await transactionRepo.findById(id);
+    if (!tx) return reply.status(404).send({ error: 'NotFound', message: 'Transaction not found' });
+
+    // Build override input
+    const input: CreateClassificationOverrideInput = {
+      transactionId: id,
+      previousCategoryId: tx.categoryId,
+      previousTipo: tx.tipo,
+      newCategoryId: body.newCategoryId,
+      newTipo: body.newTipo,
+      actor: (request as any).user?.id || 'system',
+      reason: body.reason || null,
+    };
+
+    // Create override and update transaction inside a DB transaction
+    const pool = (await import('../config/db')).getPool();
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Insert override
+      const overrideRow = await client.query(
+        `INSERT INTO classification_override (transaction_id, previous_category_id, previous_tipo, new_category_id, new_tipo, actor, reason)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        [
+          input.transactionId,
+          input.previousCategoryId || null,
+          input.previousTipo || null,
+          input.newCategoryId,
+          input.newTipo,
+          input.actor,
+          input.reason || null,
+        ]
+      );
+
+      // Update transaction classification
+      await client.query(
+        `UPDATE transaction SET category_id = $1, tipo = $2, classification_source = 'OVERRIDE', rule_id = NULL, rationale = $3, updated_at = NOW() WHERE id = $4`,
+        [input.newCategoryId, input.newTipo, input.reason || null, id]
+      );
+
+      await client.query('COMMIT');
+
+      return reply.status(200).send({ override: overrideRow.rows[0] });
     } catch (err) {
-      reply.status(500).send({ error: 'InternalError', message: String(err) });
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
     }
   });
 }
-
-export default createOverrideRoute;

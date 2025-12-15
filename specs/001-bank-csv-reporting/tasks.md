@@ -199,7 +199,7 @@ description: "Task list template for feature implementation"
 
 ### Tests for User Story 3
 
-- [ ] T034 [P] [US3] Contract tests for /transactions/unclassified and /transactions/{id}/override at backend/ingestion/test/review.contract.spec.ts
+- [x] T034 [P] [US3] Contract tests for /transactions/unclassified and /transactions/{id}/override at backend/ingestion/test/review.contract.spec.ts
 
 ### Implementation for User Story 3
 
