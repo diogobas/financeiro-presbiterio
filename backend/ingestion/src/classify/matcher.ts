@@ -49,7 +49,7 @@ export class DocumentMatcher {
       try {
         // eslint-disable-next-line no-new
         new RegExp(this.normalizedPattern, 'i');
-      } catch (e) {
+      } catch {
         throw new Error(`Invalid regex pattern: ${this.pattern}`);
       }
     }

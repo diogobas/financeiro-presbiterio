@@ -11,7 +11,7 @@
  * - Mark unclassified transactions with classification_source = 'NONE'
  */
 
-import { Rule, Transaction, ClassificationSource, MatcherType } from '../domain/types';
+import { Transaction, ClassificationSource, MatcherType } from '../domain/types';
 import { IRuleRepository } from '../domain/repositories';
 import { BatchDocumentMatcher } from './matcher';
 
