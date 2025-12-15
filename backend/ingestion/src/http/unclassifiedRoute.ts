@@ -22,3 +22,4 @@ export async function registerUnclassifiedRoutes(server: FastifyInstance): Promi
 }
 import { ITransactionRepository } from '../domain/repositories';
 
+
