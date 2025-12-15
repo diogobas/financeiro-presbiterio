@@ -5,7 +5,6 @@ import { CreateClassificationOverrideInput } from '../domain/types';
 export async function registerOverrideRoutes(server: FastifyInstance): Promise<void> {
   const transactionRepo = new PostgresTransactionRepository();
 
-  // GET /transactions/unclassified?accountId=&page=&limit=
   // POST /transactions/:id/override
   server.post(
     '/transactions/:id/override',
