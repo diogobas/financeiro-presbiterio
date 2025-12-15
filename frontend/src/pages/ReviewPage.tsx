@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import OverrideForm from '../components/review/OverrideForm';
 
 type Tx = {
