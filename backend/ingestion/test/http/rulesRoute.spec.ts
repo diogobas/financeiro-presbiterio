@@ -8,7 +8,7 @@
  * - Request/response schemas match contract
  */
 
-import { createRulesRoute } from '../../src/http/rulesRoute';
+// `createRulesRoute` is not needed in this test file
 import { IRuleRepository } from '../../src/domain/repositories';
 import { Rule, CreateRuleInput } from '../../src/domain/types';
 import { v4 as uuidv4 } from 'uuid';
@@ -269,7 +269,7 @@ describe('Rules HTTP Routes - GET /rules', () => {
     });
 
     it('should include all rule metadata fields', async () => {
-      const created = await repository.create({
+      const _created = await repository.create({
         name: 'Test Rule',
         description: 'A test rule',
         category: 'Test',
@@ -514,7 +514,7 @@ describe('Rules HTTP Routes - POST /rules', () => {
     });
 
     it('should list rules ordered by creation time', async () => {
-      const rule1 = await repository.create({
+      const _rule1 = await repository.create({
         name: 'Rule 1',
         pattern: 'PATTERN1',
         matchType: 'CONTAINS',
@@ -522,7 +522,7 @@ describe('Rules HTTP Routes - POST /rules', () => {
 
       await new Promise((resolve) => setTimeout(resolve, 10)); // Small delay
 
-      const rule2 = await repository.create({
+      const _rule2 = await repository.create({
         name: 'Rule 2',
         pattern: 'PATTERN2',
         matchType: 'CONTAINS',

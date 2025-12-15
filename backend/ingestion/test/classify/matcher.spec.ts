@@ -39,7 +39,7 @@ function matchesRegex(documento: string, pattern: string): boolean {
     // Compile regex with case-insensitive flag (already normalized to uppercase)
     const regex = new RegExp(pattern, 'i');
     return regex.test(normalizedDoc);
-  } catch (e) {
+  } catch {
     // Invalid regex pattern
     return false;
   }

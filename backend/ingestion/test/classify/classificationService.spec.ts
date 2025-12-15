@@ -532,7 +532,7 @@ describe('ClassificationService Tests', () => {
     });
 
     it('should not load disabled rules after reload', async () => {
-      const rule1 = await repository.create({
+      const _rule2 = await repository.create({
         name: 'Rule 1',
         pattern: 'PATTERN1',
         matchType: 'CONTAINS',

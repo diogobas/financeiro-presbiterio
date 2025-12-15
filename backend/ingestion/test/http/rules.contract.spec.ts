@@ -459,7 +459,7 @@ describe('Rules API - POST /rules', () => {
 
   describe('Validation Cases', () => {
     it('should reject missing required field: name', () => {
-      const request: Partial<RuleRequest> = {
+      const _request: Partial<RuleRequest> = {
         pattern: 'PADARIA',
         matchType: 'contains',
         // name missing
@@ -477,7 +477,7 @@ describe('Rules API - POST /rules', () => {
     });
 
     it('should reject missing required field: pattern', () => {
-      const request: Partial<RuleRequest> = {
+      const _request: Partial<RuleRequest> = {
         name: 'Padaria',
         matchType: 'contains',
         // pattern missing
@@ -494,7 +494,7 @@ describe('Rules API - POST /rules', () => {
     });
 
     it('should reject invalid matchType value', () => {
-      const request = {
+      const _request = {
         name: 'Padaria',
         pattern: 'PADARIA',
         matchType: 'invalid-type' as any,
@@ -511,7 +511,7 @@ describe('Rules API - POST /rules', () => {
     });
 
     it('should reject invalid regex pattern', () => {
-      const request: RuleRequest = {
+      const _request: RuleRequest = {
         name: 'Bad Regex',
         pattern: '[invalid(',
         matchType: 'regex',
@@ -528,7 +528,7 @@ describe('Rules API - POST /rules', () => {
     });
 
     it('should reject duplicate rule name', () => {
-      const existingRule: RuleResponse = {
+      const _existingRule: RuleResponse = {
         id: 'rule-001',
         name: 'Padaria',
         pattern: 'PADARIA',
@@ -557,7 +557,7 @@ describe('Rules API - POST /rules', () => {
     });
 
     it('should reject empty pattern', () => {
-      const request: RuleRequest = {
+      const _request: RuleRequest = {
         name: 'Empty Pattern',
         pattern: '',
         matchType: 'contains',
@@ -574,7 +574,7 @@ describe('Rules API - POST /rules', () => {
     });
 
     it('should reject empty name', () => {
-      const request: RuleRequest = {
+      const _request: RuleRequest = {
         name: '',
         pattern: 'PADARIA',
         matchType: 'contains',
@@ -591,7 +591,7 @@ describe('Rules API - POST /rules', () => {
     });
 
     it('should reject name exceeding max length', () => {
-      const request: RuleRequest = {
+      const _request: RuleRequest = {
         name: 'X'.repeat(256), // Exceeds typical max of 255
         pattern: 'PADARIA',
         matchType: 'contains',
@@ -608,7 +608,7 @@ describe('Rules API - POST /rules', () => {
     });
 
     it('should reject invalid priority value', () => {
-      const request: RuleRequest = {
+      const _request: RuleRequest = {
         name: 'Padaria',
         pattern: 'PADARIA',
         matchType: 'contains',
