@@ -91,7 +91,13 @@ export default function OverrideForm({
       });
 
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}) as { message?: string });
+        interface ErrorResponse { message?: string }
+        let body: ErrorResponse = { message: undefined };
+        try {
+          body = await res.json();
+        } catch {
+          // body remains { message: undefined }
+        }
         setError(body?.message || 'Failed to apply override');
         return;
       }
