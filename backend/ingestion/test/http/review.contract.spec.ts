@@ -100,7 +100,11 @@ describe('Review API - POST /transactions/:id/override', () => {
 
   it('returns 400 for missing newCategoryId or newTipo', () => {
     const bad: any = { reason: 'no category' };
-    const error = { error: 'BadRequest', message: 'newCategoryId and newTipo are required', statusCode: 400 } as any;
+    const error = {
+      error: 'BadRequest',
+      message: 'newCategoryId and newTipo are required',
+      statusCode: 400,
+    } as any;
     expect(error.statusCode).toBe(400);
     expect(error.error).toBe('BadRequest');
   });

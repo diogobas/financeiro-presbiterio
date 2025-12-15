@@ -28,7 +28,10 @@ interface ListUnclassifiedQuery {
   limit?: string | number;
 }
 
-export async function createUnclassifiedRoute(server: FastifyInstance, repo: ITransactionRepository) {
+export async function createUnclassifiedRoute(
+  server: FastifyInstance,
+  repo: ITransactionRepository
+) {
   server.get('/transactions/unclassified', async (request: FastifyRequest, reply: FastifyReply) => {
     const query = request.query as unknown as ListUnclassifiedQuery;
     const page = parseInt(String(query.page || '1'), 10) || 1;

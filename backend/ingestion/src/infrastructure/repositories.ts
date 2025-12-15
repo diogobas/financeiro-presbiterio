@@ -798,8 +798,6 @@ export class PostgresRuleRepository implements IRuleRepository {
     };
   }
 
-
-
   async findActive(): Promise<Rule[]> {
     const result = await getPool().query<any>(
       `SELECT 
